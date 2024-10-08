@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,7 @@ import (
 )
 
 type ModePlugin interface {
-	Run(args []string)
+	Run(args []string, module string)
 }
 
 type Color string
@@ -27,6 +28,10 @@ func colorize(color Color, message string) {
 }
 
 func main() {
+	M := flag.String("M", "", "choose module")
+	flag.Parse()
+	fmt.Println(*M)
+
 	if len(os.Args) < 2 {
 		fmt.Println("choose mod")
 		os.Exit(0)
@@ -42,11 +47,16 @@ func main() {
 	}
 
 	if plugin, found := plugins[mode]; found {
-		plugin.Run(os.Args[2:])
+		fmt.Println(*M)
+		if *M != "" {
+			plugin.Run(os.Args[2:], *M)
+		}
+		plugin.Run(os.Args[2:], "")
 	} else {
 		fmt.Println("Uknown mode: ", mode)
 		os.Exit(0)
 	}
+
 }
 
 func loadPlugins(pluginDir string) (map[string]ModePlugin, error) {
