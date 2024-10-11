@@ -8,9 +8,8 @@ import (
 type mode string
 
 func (m mode) Run(args []string, module string) {
-	fmt.Println("module: ", module)
 	if module != "" {
-		fmt.Println("qweqwe")
+		fmt.Println("module: ", module)
 	}
 	fmt.Println(lol.Testfunc(args[0]))
 }

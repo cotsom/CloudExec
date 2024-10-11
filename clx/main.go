@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,13 +27,16 @@ func colorize(color Color, message string) {
 }
 
 func main() {
-	M := flag.String("M", "", "choose module")
-	flag.Parse()
-	fmt.Println(*M)
-
 	if len(os.Args) < 2 {
 		fmt.Println("choose mod")
 		os.Exit(0)
+	}
+
+	moduleName := ""
+	for i, arg := range os.Args {
+		if arg == "-M" {
+			moduleName = os.Args[i+1]
+		}
 	}
 
 	mode := os.Args[1]
@@ -47,11 +49,11 @@ func main() {
 	}
 
 	if plugin, found := plugins[mode]; found {
-		fmt.Println(*M)
-		if *M != "" {
-			plugin.Run(os.Args[2:], *M)
+		if moduleName != "" {
+			plugin.Run(os.Args[2:], moduleName)
+		} else {
+			plugin.Run(os.Args[2:], "")
 		}
-		plugin.Run(os.Args[2:], "")
 	} else {
 		fmt.Println("Uknown mode: ", mode)
 		os.Exit(0)
