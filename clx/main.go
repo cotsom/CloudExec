@@ -28,7 +28,7 @@ func colorize(color Color, message string) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("choose mod")
+		fmt.Println("choose mode")
 		os.Exit(0)
 	}
 
@@ -55,7 +55,8 @@ func loadPlugins(pluginDir string) (map[string]ModePlugin, error) {
 
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			fmt.Println("Uknown mode: ", path)
+			os.Exit(0)
 		}
 		if filepath.Ext(path) == ".so" {
 			p, err := plugin.Open(path)
