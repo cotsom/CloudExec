@@ -8,7 +8,7 @@ import (
 )
 
 type ModePlugin interface {
-	Run(args []string, module string)
+	Run(args []string)
 }
 
 type Color string
@@ -32,16 +32,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	moduleName := ""
-	for i, arg := range os.Args {
-		if arg == "-M" {
-			moduleName = os.Args[i+1]
-		}
-	}
-
 	mode := os.Args[1]
 
-	pluginDir := "mods/"
+	pluginDir := fmt.Sprintf("mods/%s", mode)
 	plugins, err := loadPlugins(pluginDir)
 	if err != nil {
 		fmt.Println(err)
@@ -49,11 +42,7 @@ func main() {
 	}
 
 	if plugin, found := plugins[mode]; found {
-		if moduleName != "" {
-			plugin.Run(os.Args[2:], moduleName)
-		} else {
-			plugin.Run(os.Args[2:], "")
-		}
+		plugin.Run(os.Args[2:])
 	} else {
 		fmt.Println("Uknown mode: ", mode)
 		os.Exit(0)
