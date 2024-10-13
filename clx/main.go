@@ -34,7 +34,14 @@ func main() {
 
 	mode := os.Args[1]
 
-	pluginDir := fmt.Sprintf("mods/%s", mode)
+	currentPath, err := os.Executable()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	workingDir := filepath.Dir(currentPath)
+
+	pluginDir := fmt.Sprintf("%s/mods/%s", workingDir, mode)
 	plugins, err := loadPlugins(pluginDir)
 	if err != nil {
 		fmt.Println(err)
@@ -55,7 +62,7 @@ func loadPlugins(pluginDir string) (map[string]ModePlugin, error) {
 
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Println("Uknown mode: ", path)
+			fmt.Println("Uknown mode")
 			os.Exit(0)
 		}
 		if filepath.Ext(path) == ".so" {

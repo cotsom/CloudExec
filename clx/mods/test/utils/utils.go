@@ -2,13 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
 func GetModulesName(path string) ([]string, error) {
 	var modules []string
-	files, err := ioutil.ReadDir(".")
+	files, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return modules, err
@@ -28,4 +28,17 @@ func Contains(s []string, element string) bool {
 		}
 	}
 	return false
+}
+
+func GetParamModule(args []string) string {
+	for i, arg := range args {
+		if arg == "-M" {
+			if len(args) != i+1 {
+				return args[i+1]
+			}
+			fmt.Println("You have to chose module here")
+			return ""
+		}
+	}
+	return ""
 }

@@ -4,31 +4,35 @@ import (
 	modules "clx/mods/test/modules"
 	utils "clx/mods/test/utils"
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 type mode string
 
 func (m mode) Run(args []string) {
-	module := ""
-	for i, arg := range args {
-		if arg == "-M" {
-			if len(args) != i+1 {
-				module = args[i+1]
-			} else {
-				fmt.Println("You have to chose module here")
-			}
-		}
+	if len(args) < 1 {
+		fmt.Println("Enter host or subnetwork")
+		return
 	}
 
+	module := utils.GetParamModule(args)
+
 	if module != "" {
-		modules, err := utils.GetModulesName("modules")
+		rootPath, err := os.Executable()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("modules: ", modules)
+		modules, err := utils.GetModulesName(fmt.Sprintf("%s/mods/test/modules", filepath.Dir(rootPath)))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 		if !utils.Contains(modules, module) {
-			fmt.Sprintf("there is no %s module, chose ones from list %s", module, modules)
+			fmt.Printf("there is no %s module, chose ones from list \n%s\n", module, modules)
+			return
 		}
 
 		// fmt.Println("module: ", module)
