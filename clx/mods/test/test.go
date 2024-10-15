@@ -8,7 +8,17 @@ import (
 	"path/filepath"
 )
 
+// mode type for plugin's symbol
 type mode string
+
+type Module interface {
+	RunModule(arg string)
+}
+
+var registeredModules = map[string]Module{
+	"module1": modules.Module1{},
+	// Add another modules here
+}
 
 func (m mode) Run(args []string) {
 	if len(args) < 1 {
@@ -16,9 +26,9 @@ func (m mode) Run(args []string) {
 		return
 	}
 
-	module := utils.GetParamModule(args)
+	moduleName := utils.GetParamModule(args)
 
-	if module != "" {
+	if moduleName != "" {
 		rootPath, err := os.Executable()
 		if err != nil {
 			fmt.Println(err)
@@ -30,15 +40,21 @@ func (m mode) Run(args []string) {
 			return
 		}
 
-		if !utils.Contains(modules, module) {
-			fmt.Printf("there is no %s module, chose ones from list \n%s\n", module, modules)
+		if !utils.Contains(modules, moduleName) {
+			fmt.Printf("there is no %s module, chose ones from list \n%s\n", moduleName, modules)
 			return
 		}
 
-		// fmt.Println("module: ", module)
+		module, exists := registeredModules[moduleName]
+		if !exists {
+			fmt.Printf("Module %s not found. Available modules: %v\n")
+			os.Exit(1)
+		}
+		module.RunModule("lol")
 	}
-	fmt.Println(modules.Testfunc(args[0]))
+
+	fmt.Println("working with", args[0], "here")
 }
 
-// экспортируется как символ с именем "Mode"
+// exporting symbol "Mode"
 var Mode mode

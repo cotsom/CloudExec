@@ -37,7 +37,7 @@ func GetParamModule(args []string) string {
 				return args[i+1]
 			}
 			fmt.Println("You have to chose module here")
-			return ""
+			os.Exit(1)
 		}
 	}
 	return ""
