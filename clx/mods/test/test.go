@@ -45,12 +45,12 @@ func (m mode) Run(args []string) {
 			return
 		}
 
-		module, exists := registeredModules[moduleName]
-		if !exists {
-			fmt.Printf("Module %s not found. Available modules: %v\n")
+		if module, exists := registeredModules[moduleName]; exists {
+			module.RunModule("lol")
+		} else {
+			fmt.Printf("Module %s not found. Available modules: %v\n", moduleName, modules)
 			os.Exit(1)
 		}
-		module.RunModule("lol")
 	}
 
 	fmt.Println("working with", args[0], "here")

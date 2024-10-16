@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"plugin"
+	"strings"
 )
 
 type ModePlugin interface {
@@ -15,11 +16,11 @@ type Color string
 
 const (
 	ColorBlack  Color = "\u001b[30m"
-	ColorRed          = "\u001b[31m"
-	ColorGreen        = "\u001b[32m"
-	ColorYellow       = "\u001b[33m"
-	ColorBlue         = "\u001b[34m"
-	ColorReset        = "\u001b[0m"
+	ColorRed    Color = "\u001b[31m"
+	ColorGreen  Color = "\u001b[32m"
+	ColorYellow Color = "\u001b[33m"
+	ColorBlue   Color = "\u001b[34m"
+	ColorReset  Color = "\u001b[0m"
 )
 
 func colorize(color Color, message string) {
@@ -28,7 +29,7 @@ func colorize(color Color, message string) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("choose mode")
+		colorize(ColorRed, "choose mode")
 		os.Exit(0)
 	}
 
@@ -62,7 +63,8 @@ func loadPlugins(pluginDir string) (map[string]ModePlugin, error) {
 
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Println("Uknown mode")
+			mode := strings.Split(pluginDir, "/")
+			colorize(ColorRed, fmt.Sprint("Uknown mode: ", mode[len(mode)-1]))
 			os.Exit(0)
 		}
 		if filepath.Ext(path) == ".so" {
