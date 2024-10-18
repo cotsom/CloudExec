@@ -26,6 +26,9 @@ func (m mode) Run(args []string) {
 		return
 	}
 
+	var targets = utils.ParseTargets(args[0])
+	fmt.Println(targets)
+
 	moduleName := utils.GetParamModule(args)
 
 	if moduleName != "" {
