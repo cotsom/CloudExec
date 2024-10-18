@@ -2,7 +2,7 @@ package main
 
 import (
 	modules "clx/mods/kube/modules"
-	utils "clx/mods/kube/utils"
+	utils "clx/utils"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,11 +34,8 @@ func (m mode) Run(args []string) {
 			fmt.Println(err)
 			return
 		}
-		modules, err := utils.GetModulesName(fmt.Sprintf("%s/mods/test/modules", filepath.Dir(rootPath)))
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+
+		modules := utils.GetModulesName(fmt.Sprintf("%s/mods/kube/modules", filepath.Dir(rootPath)))
 
 		if !utils.Contains(modules, moduleName) {
 			fmt.Printf("there is no %s module, chose ones from list \n%s\n", moduleName, modules)

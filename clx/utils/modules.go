@@ -6,19 +6,19 @@ import (
 	"path/filepath"
 )
 
-func GetModulesName(path string) ([]string, error) {
+func GetModulesName(path string) []string {
 	var modules []string
 	files, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return modules, err
+		return modules
 	}
 
 	for _, file := range files {
 		modules = append(modules, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
 	}
 
-	return modules, nil
+	return modules
 }
 
 func Contains(s []string, element string) bool {
