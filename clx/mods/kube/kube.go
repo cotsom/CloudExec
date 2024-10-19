@@ -46,7 +46,7 @@ func checkKubeApi(target string) {
 			fmt.Printf("client: could not read response body: %s\n", err)
 		}
 
-		if strings.Contains(string(respBody), "\"apiVersion\":\"v1\"") {
+		if strings.Contains(string(respBody), "\"apiVersion\"") {
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
 		}
 	}
