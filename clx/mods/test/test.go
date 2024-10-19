@@ -26,9 +26,15 @@ func (m mode) Run(args []string) {
 		return
 	}
 
-	moduleName := utils.GetParamModule(args)
+	moduleName, err := utils.GetParam(args, "-M")
+	if err != nil {
+		fmt.Println("You have to chose module here")
+		os.Exit(0)
+	}
 
-	if moduleName != "" {
+	if moduleName == "" {
+		fmt.Println("working with", args[0], "here")
+	} else {
 		rootPath, err := os.Executable()
 		if err != nil {
 			fmt.Println(err)
@@ -49,7 +55,6 @@ func (m mode) Run(args []string) {
 		}
 	}
 
-	fmt.Println("working with", args[0], "here")
 }
 
 // exporting symbol "Mode"

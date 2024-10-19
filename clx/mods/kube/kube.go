@@ -20,6 +20,11 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
+func checkKubeApi(target string) {
+	ports := []string{"6443", "8443", "8080", ""}
+	fmt.Println(ports)
+}
+
 func (m mode) Run(args []string) {
 	if len(args) < 1 {
 		fmt.Println("Enter host or subnetwork")
@@ -29,9 +34,17 @@ func (m mode) Run(args []string) {
 	var targets = utils.ParseTargets(args[0])
 	fmt.Println(targets)
 
-	moduleName := utils.GetParamModule(args)
+	moduleName, err := utils.GetParam(args, "-M")
+	if err != nil {
+		fmt.Println("You have to chose module here")
+		os.Exit(0)
+	}
 
-	if moduleName != "" {
+	if moduleName == "" {
+		for _, target := range targets {
+			go checkKubeApi(target.String())
+		}
+	} else {
 		rootPath, err := os.Executable()
 		if err != nil {
 			fmt.Println(err)

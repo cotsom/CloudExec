@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,15 +31,15 @@ func Contains(s []string, element string) bool {
 	return false
 }
 
-func GetParamModule(args []string) string {
+func GetParam(args []string, moduleSymbol string) (string, error) {
 	for i, arg := range args {
-		if arg == "-M" {
+		if arg == moduleSymbol {
 			if len(args) != i+1 {
-				return args[i+1]
+				return args[i+1], nil
 			}
-			fmt.Println("You have to chose module here")
-			os.Exit(1)
+			err := errors.New("doesn't have param value")
+			return "", err
 		}
 	}
-	return ""
+	return "", nil
 }
