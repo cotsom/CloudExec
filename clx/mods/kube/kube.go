@@ -25,13 +25,13 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
-func checkKubeApi(target string) {
+func checkKubeApi(target string, c chan string) {
 	ports := [3]string{"6443", "8443", "8080"}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	for _, port := range ports {
 		client := http.Client{
-			Timeout: 2 * time.Second,
+			Timeout: 1 * time.Second,
 		}
 		url := fmt.Sprintf("https://%s:%s", target, port)
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
@@ -47,19 +47,22 @@ func checkKubeApi(target string) {
 		}
 
 		if strings.Contains(string(respBody), "\"apiVersion\"") {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
+			c <- fmt.Sprintf("[*] %s - kube Api", target)
+			// utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
 		}
 	}
+	close(c)
 }
 
 func (m mode) Run(args []string) {
+	//Get input data
 	if len(args) < 1 {
 		fmt.Println("Enter host or subnetwork")
 		return
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	// fmt.Println(targets)
+	fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {
@@ -67,9 +70,14 @@ func (m mode) Run(args []string) {
 		os.Exit(0)
 	}
 
+	//Mode logic
 	if moduleName == "" {
+		c := make(chan string)
 		for _, target := range targets {
-			checkKubeApi(target.String())
+			go checkKubeApi(target.String(), c)
+		}
+		for i := range c {
+			fmt.Println(i)
 		}
 	} else {
 		rootPath, err := os.Executable()
