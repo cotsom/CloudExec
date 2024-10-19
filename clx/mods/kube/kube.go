@@ -3,9 +3,14 @@ package main
 import (
 	modules "clx/mods/kube/modules"
 	utils "clx/utils"
+	"crypto/tls"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 // mode type for plugin's symbol
@@ -21,8 +26,30 @@ var registeredModules = map[string]Module{
 }
 
 func checkKubeApi(target string) {
-	ports := []string{"6443", "8443", "8080", ""}
-	fmt.Println(ports)
+	ports := [3]string{"6443", "8443", "8080"}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	for _, port := range ports {
+		client := http.Client{
+			Timeout: 2 * time.Second,
+		}
+		url := fmt.Sprintf("https://%s:%s", target, port)
+		req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("client: could not read response body: %s\n", err)
+		}
+
+		if strings.Contains(string(respBody), "\"apiVersion\":\"v1\"") {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
+		}
+	}
 }
 
 func (m mode) Run(args []string) {
@@ -32,7 +59,7 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	fmt.Println(targets)
+	// fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {
@@ -42,7 +69,7 @@ func (m mode) Run(args []string) {
 
 	if moduleName == "" {
 		for _, target := range targets {
-			go checkKubeApi(target.String())
+			checkKubeApi(target.String())
 		}
 	} else {
 		rootPath, err := os.Executable()
@@ -66,7 +93,6 @@ func (m mode) Run(args []string) {
 		}
 	}
 
-	fmt.Println("working with", args[0], "here")
 }
 
 // exporting symbol "Mode"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"clx/utils"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,24 +13,9 @@ type ModePlugin interface {
 	Run(args []string)
 }
 
-type Color string
-
-const (
-	ColorBlack  Color = "\u001b[30m"
-	ColorRed    Color = "\u001b[31m"
-	ColorGreen  Color = "\u001b[32m"
-	ColorYellow Color = "\u001b[33m"
-	ColorBlue   Color = "\u001b[34m"
-	ColorReset  Color = "\u001b[0m"
-)
-
-func colorize(color Color, message string) {
-	fmt.Println(string(color), message, string(ColorReset))
-}
-
 func main() {
 	if len(os.Args) < 2 {
-		colorize(ColorRed, "choose mode")
+		utils.Colorize(utils.ColorRed, "choose mode")
 		os.Exit(0)
 	}
 
@@ -64,7 +50,7 @@ func loadPlugins(pluginDir string) (map[string]ModePlugin, error) {
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			mode := strings.Split(pluginDir, "/")
-			colorize(ColorRed, fmt.Sprint("Uknown mode: ", mode[len(mode)-1]))
+			utils.Colorize(utils.ColorRed, fmt.Sprint("Uknown mode: ", mode[len(mode)-1]))
 			os.Exit(0)
 		}
 		if filepath.Ext(path) == ".so" {
