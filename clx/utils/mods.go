@@ -2,24 +2,31 @@ package utils
 
 import (
 	"fmt"
-	"log"
-	"net"
+	"net/netip"
+	"os"
 )
 
-func ParseTargets(arg string) []string {
-	var targets []string
+func ParseTargets(arg string) []netip.Addr {
+	var targets []netip.Addr
 
-	ipv4Addr, ipv4Net, err := net.ParseCIDR("192.0.2.1/24")
-	if err != nil {
-		log.Fatal(err)
+	ip, err := netip.ParseAddr(arg)
+	if err == nil {
+		return append(targets, ip)
 	}
-	fmt.Println(ipv4Addr)
-	fmt.Println(ipv4Net)
 
-	if ValidIP4(arg) {
-		targets = append(targets, arg)
+	prefix, err := netip.ParsePrefix(arg)
+	if err != nil {
+		fmt.Println("Enter correct host or subnetwork")
+		os.Exit(0)
+	}
+
+	for addr := prefix.Addr(); prefix.Contains(addr); addr = addr.Next() {
+		targets = append(targets, addr)
+	}
+
+	if len(targets) < 2 {
 		return targets
 	}
 
-	return nil
+	return targets[1 : len(targets)-1]
 }
