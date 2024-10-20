@@ -36,7 +36,6 @@ func ParseTargets(arg string) []netip.Addr {
 			targets = targets[:len(targets)-1]   // Truncate slice.
 		}
 	}
-	fmt.Println(targets)
 
 	return targets
 }

@@ -26,18 +26,21 @@ var registeredModules = map[string]Module{
 }
 
 func checkKubeApi(target string, c chan string) {
-	ports := [3]string{"6443", "8443", "8080"}
+	// defer wg.Done()
+	ports := [3]string{"6443"}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	for _, port := range ports {
+		fmt.Println("target:", target, "port:", port)
 		client := http.Client{
-			Timeout: 1 * time.Second,
+			Timeout: 3 * time.Second,
 		}
 		url := fmt.Sprintf("https://%s:%s", target, port)
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
 
 		resp, err := client.Do(req)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 
@@ -51,7 +54,6 @@ func checkKubeApi(target string, c chan string) {
 			// utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
 		}
 	}
-	close(c)
 }
 
 func (m mode) Run(args []string) {
@@ -72,13 +74,21 @@ func (m mode) Run(args []string) {
 
 	//Mode logic
 	if moduleName == "" {
+		// var wg sync.WaitGroup
 		c := make(chan string)
 		for _, target := range targets {
+			// wg.Add(1)
 			go checkKubeApi(target.String(), c)
 		}
-		for i := range c {
-			fmt.Println(i)
+		// go func() {
+		// 	wg.Wait()
+		// 	close(c)
+		// }()
+
+		for result := range c {
+			fmt.Println(result)
 		}
+
 	} else {
 		rootPath, err := os.Executable()
 		if err != nil {
