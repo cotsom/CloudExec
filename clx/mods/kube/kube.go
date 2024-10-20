@@ -62,7 +62,7 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	fmt.Println(targets)
+	// fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {

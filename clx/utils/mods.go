@@ -28,5 +28,15 @@ func ParseTargets(arg string) []netip.Addr {
 		return targets
 	}
 
-	return targets[1 : len(targets)-1]
+	//Delete .0 and .255 targets
+	for i := 0; i < 2; i++ {
+		first_target := []rune(targets[0].String())
+		if (string(first_target[len(first_target)-1]) == "0") || (string(first_target[len(first_target)-3:]) == "255") {
+			targets[0] = targets[len(targets)-1] // Copy last element to index i.
+			targets = targets[:len(targets)-1]   // Truncate slice.
+		}
+	}
+	fmt.Println(targets)
+
+	return targets
 }
