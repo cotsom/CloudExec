@@ -27,13 +27,13 @@ var registeredModules = map[string]Module{
 
 func checkKubeApi(target string, c chan string) {
 	// defer wg.Done()
-	ports := [3]string{"6443"}
+	ports := []string{"6443"}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	for _, port := range ports {
 		fmt.Println("target:", target, "port:", port)
 		client := http.Client{
-			Timeout: 3 * time.Second,
+			Timeout: 1 * time.Second,
 		}
 		url := fmt.Sprintf("https://%s:%s", target, port)
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
@@ -64,7 +64,7 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	// fmt.Println(targets)
+	fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {

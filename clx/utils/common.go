@@ -1,10 +1,38 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
+	"time"
 )
+
+func GetParam(args []string, moduleSymbol string) (string, error) {
+	for i, arg := range args {
+		if arg == moduleSymbol {
+			if len(args) != i+1 {
+				return args[i+1], nil
+			}
+			err := errors.New("doesn't have param value")
+			return "", err
+		}
+	}
+	return "", nil
+}
+
+func CheckPortOpen(host string, port string) {
+	timeout := time.Second
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
+	if err != nil {
+		fmt.Println("Connecting error:", err)
+	}
+	if conn != nil {
+		defer conn.Close()
+		fmt.Println("Opened", net.JoinHostPort(host, port))
+	}
+}
 
 func ValidIP4(ipAddress string) bool {
 	ipAddress = strings.Trim(ipAddress, " ")
