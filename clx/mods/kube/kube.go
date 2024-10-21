@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,13 +26,16 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
-func checkKubeApi(target string, c chan string) {
-	// defer wg.Done()
+func checkKubeApi(target string, wg *sync.WaitGroup, sem chan struct{}) {
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
 	ports := []string{"6443"}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	for _, port := range ports {
-		fmt.Println("target:", target, "port:", port)
+		// fmt.Println("target:", target, "port:", port)
 		client := http.Client{
 			Timeout: 1 * time.Second,
 		}
@@ -40,9 +44,11 @@ func checkKubeApi(target string, c chan string) {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			continue
 		}
+
+		defer resp.Body.Close()
 
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -50,8 +56,8 @@ func checkKubeApi(target string, c chan string) {
 		}
 
 		if strings.Contains(string(respBody), "\"apiVersion\"") {
-			c <- fmt.Sprintf("[*] %s - kube Api", target)
-			// utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
+			// c <- fmt.Sprintf("[*] %s - kube Api", target)
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
 		}
 	}
 }
@@ -64,7 +70,7 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	fmt.Println(targets)
+	// fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {
@@ -74,21 +80,16 @@ func (m mode) Run(args []string) {
 
 	//Mode logic
 	if moduleName == "" {
-		// var wg sync.WaitGroup
-		c := make(chan string)
+		var wg sync.WaitGroup
+		sem := make(chan struct{}, 100)
 		for _, target := range targets {
-			// wg.Add(1)
-			go checkKubeApi(target.String(), c)
-		}
-		// go func() {
-		// 	wg.Wait()
-		// 	close(c)
-		// }()
+			wg.Add(1)
+			sem <- struct{}{}
+			go checkKubeApi(target.String(), &wg, sem)
 
-		for result := range c {
-			fmt.Println(result)
 		}
-
+		wg.Wait()
+		close(sem)
 	} else {
 		rootPath, err := os.Executable()
 		if err != nil {
