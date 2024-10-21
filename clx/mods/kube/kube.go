@@ -26,19 +26,20 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
-func checkKubeApi(target string, wg *sync.WaitGroup, sem chan struct{}) {
+func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
-	ports := []string{"6443"}
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	ports := map[string][]string{"kubeapi": {"6443"}, "kubelet": {"10250"}}
 
-	for _, port := range ports {
-		// fmt.Println("target:", target, "port:", port)
-		client := http.Client{
-			Timeout: 1 * time.Second,
-		}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := http.Client{
+		Timeout: 1 * time.Second,
+	}
+
+	//check kubeapi
+	for _, port := range ports["kubeapi"] {
 		url := fmt.Sprintf("https://%s:%s", target, port)
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
 
@@ -56,8 +57,32 @@ func checkKubeApi(target string, wg *sync.WaitGroup, sem chan struct{}) {
 		}
 
 		if strings.Contains(string(respBody), "\"apiVersion\"") {
-			// c <- fmt.Sprintf("[*] %s - kube Api", target)
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kube Api", target))
+		}
+	}
+
+	//check kubelet
+	for _, port := range ports["kubelet"] {
+		url := fmt.Sprintf("https://%s:%s/pods", target, port)
+		req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			// fmt.Println(err)
+			continue
+		}
+
+		defer resp.Body.Close()
+
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("client: could not read response body: %s\n", err)
+		}
+
+		if strings.Contains(string(respBody), "Unauthorized") {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kubelet", target))
+		} else {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kubelet UNAUTH!", target))
 		}
 	}
 }
@@ -81,15 +106,15 @@ func (m mode) Run(args []string) {
 	//Mode logic
 	if moduleName == "" {
 		var wg sync.WaitGroup
-		sem := make(chan struct{}, 100)
+		sem := make(chan struct{}, 256)
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
-			go checkKubeApi(target.String(), &wg, sem)
+			go checkKube(target.String(), &wg, sem)
 
 		}
 		wg.Wait()
-		close(sem)
+		// close(sem)
 	} else {
 		rootPath, err := os.Executable()
 		if err != nil {
