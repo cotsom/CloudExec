@@ -3,7 +3,6 @@ package main
 import (
 	modules "clx/mods/kube/modules"
 	utils "clx/utils"
-	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,7 +32,7 @@ func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	}()
 	ports := map[string][]string{"kubeapi": {"6443"}, "kubelet": {"10250"}}
 
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := http.Client{
 		Timeout: 1 * time.Second,
 	}
@@ -41,17 +40,27 @@ func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	//check kubeapi
 	for _, port := range ports["kubeapi"] {
 		url := fmt.Sprintf("https://%s:%s", target, port)
-		req, _ := http.NewRequest(http.MethodGet, url, nil)
+		// req, _ := http.NewRequest(http.MethodGet, url, nil)
 
-		resp, err := client.Do(req)
+		// resp, err := client.Do(req)
+		// if err != nil {
+		// 	// fmt.Println(err)
+		// 	continue
+		// }
+
+		// defer resp.Body.Close()
+
+		// respBody, err := ioutil.ReadAll(resp.Body)
+		// if err != nil {
+		// 	fmt.Printf("client: could not read response body: %s\n", err)
+		// }
+
+		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			// fmt.Println(err)
 			continue
 		}
-
-		defer resp.Body.Close()
-
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			fmt.Printf("client: could not read response body: %s\n", err)
 		}
@@ -95,7 +104,7 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	// fmt.Println(targets)
+	fmt.Println(targets)
 
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {

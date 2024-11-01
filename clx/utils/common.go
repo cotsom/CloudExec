@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -55,4 +58,16 @@ const (
 
 func Colorize(color Color, message string) {
 	fmt.Println(string(color), message, string(ColorReset))
+}
+
+func HttpRequest(targetUrl string, method string, data []byte, client http.Client) (*http.Response, error) {
+	request, err := http.NewRequest(method, targetUrl, bytes.NewBuffer(data))
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	response, err := client.Do(request)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
 }
