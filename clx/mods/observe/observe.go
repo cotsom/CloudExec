@@ -94,6 +94,7 @@ func (m mode) Run(args []string) {
 			go checkGrafana(target.String(), &wg, sem)
 			// time.Sleep(time.Second * 2)
 		}
+		wg.Wait()
 	} else {
 		rootPath, err := os.Executable()
 		if err != nil {

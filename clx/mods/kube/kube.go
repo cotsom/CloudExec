@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -26,13 +27,13 @@ var registeredModules = map[string]Module{
 }
 
 func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
+	fmt.Println(target)
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
 	ports := map[string][]string{"kubeapi": {"6443"}, "kubelet": {"10250"}}
 
-	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := http.Client{
 		Timeout: 1 * time.Second,
 	}
@@ -40,26 +41,15 @@ func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	//check kubeapi
 	for _, port := range ports["kubeapi"] {
 		url := fmt.Sprintf("https://%s:%s", target, port)
-		// req, _ := http.NewRequest(http.MethodGet, url, nil)
-
-		// resp, err := client.Do(req)
-		// if err != nil {
-		// 	// fmt.Println(err)
-		// 	continue
-		// }
-
-		// defer resp.Body.Close()
-
-		// respBody, err := ioutil.ReadAll(resp.Body)
-		// if err != nil {
-		// 	fmt.Printf("client: could not read response body: %s\n", err)
-		// }
 
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			// fmt.Println(err)
 			continue
 		}
+
+		defer response.Body.Close()
+
 		respBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			fmt.Printf("client: could not read response body: %s\n", err)
@@ -73,17 +63,15 @@ func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	//check kubelet
 	for _, port := range ports["kubelet"] {
 		url := fmt.Sprintf("https://%s:%s/pods", target, port)
-		req, _ := http.NewRequest(http.MethodGet, url, nil)
-
-		resp, err := client.Do(req)
+		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			// fmt.Println(err)
 			continue
 		}
 
-		defer resp.Body.Close()
+		defer response.Body.Close()
 
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			fmt.Printf("client: could not read response body: %s\n", err)
 		}
@@ -104,18 +92,37 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	fmt.Println(targets)
+	// fmt.Println(targets)
 
+	//Get module
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {
 		fmt.Println("You have to chose module here")
 		os.Exit(0)
 	}
 
+	//Get threads number
+	threadsNumber, err := utils.GetParam(args, "-t")
+	if err != nil {
+		fmt.Println("You have to set threads number")
+		os.Exit(0)
+	}
+
 	//Mode logic
 	if moduleName == "" {
 		var wg sync.WaitGroup
-		sem := make(chan struct{}, 256)
+		var sem chan struct{}
+
+		if threadsNumber != "" {
+			threads, err := strconv.Atoi(threadsNumber)
+			if err != nil {
+				fmt.Println("You have to set correct number of threads")
+				os.Exit(0)
+			}
+			sem = make(chan struct{}, threads)
+		} else {
+			sem = make(chan struct{}, 100)
+		}
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
