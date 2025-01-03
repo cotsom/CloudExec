@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,35 +31,33 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}) {
 		<-sem
 		wg.Done()
 	}()
-	ports := map[string][]string{"grafana": {"3000"}, "prometheus": {"9090"}}
+	port := "3000"
+	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
 	}
 
 	//check grafana port
-	for _, port := range ports["grafana"] {
-		// fmt.Println(target)
-		url := fmt.Sprintf("http://%s:%s", target, port)
+	url := fmt.Sprintf("http://%s:%s", target, port)
 
-		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-		if err != nil {
-			// fmt.Println(err)
-			continue
-		}
-		respBody, err := ioutil.ReadAll(response.Body)
-		defer response.Body.Close()
-		if err != nil {
-			fmt.Printf("client: could not read response body: %s\n", err)
-		}
+	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		return
+	}
+	respBody, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+	}
 
-		if strings.Contains(string(respBody), "grafana") {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
-			url := fmt.Sprintf("http://admin:admin@%s:%s", target, port)
+	if strings.Contains(string(respBody), "grafana") {
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
+		for _, creds := range grafanaDefaultCreds {
+			url := fmt.Sprintf("http://%s@%s:%s", creds, target, port)
 			response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 			if err != nil {
-				// fmt.Println(err)
-				continue
+				fmt.Println(err)
 			}
 			respBody, err := ioutil.ReadAll(response.Body)
 			defer response.Body.Close()
@@ -78,16 +77,35 @@ func (m mode) Run(args []string) {
 	var targets = utils.ParseTargets(args[0])
 	// fmt.Println(targets)
 
+	//Get module
 	moduleName, err := utils.GetParam(args, "-M")
 	if err != nil {
 		fmt.Println("You have to chose module here")
 		os.Exit(0)
 	}
 
+	//Get threads number
+	threadsNumber, err := utils.GetParam(args, "-t")
+	if err != nil {
+		fmt.Println("You have to set threads number")
+		os.Exit(0)
+	}
+
 	//Mode logic
 	if moduleName == "" {
 		var wg sync.WaitGroup
-		sem := make(chan struct{}, 100)
+		var sem chan struct{}
+
+		if threadsNumber != "" {
+			threads, err := strconv.Atoi(threadsNumber)
+			if err != nil {
+				fmt.Println("You have to set correct number of threads")
+				os.Exit(0)
+			}
+			sem = make(chan struct{}, threads)
+		} else {
+			sem = make(chan struct{}, 100)
+		}
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
