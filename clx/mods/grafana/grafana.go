@@ -26,12 +26,16 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
-func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}) {
+func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string) {
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
-	port := "3000"
+
+	if port == "" {
+		port = "3000"
+	}
+
 	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 
 	client := http.Client{
@@ -52,18 +56,23 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}) {
 	}
 
 	if strings.Contains(string(respBody), "grafana") {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana found!", target))
 		for _, creds := range grafanaDefaultCreds {
-			url := fmt.Sprintf("http://%s@%s:%s", creds, target, port)
+			url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
 			response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 			if err != nil {
 				fmt.Println(err)
 			}
-			respBody, err := ioutil.ReadAll(response.Body)
-			defer response.Body.Close()
-			if strings.Contains(string(respBody), "grafana") {
 
+			fmt.Println(response.StatusCode)
+			if response.StatusCode == 200 {
+				utils.Colorize(utils.ColorGreen, fmt.Sprintf("[*] %s - Default creds found! (%s)", target, creds))
 			}
+			// respBody, err := ioutil.ReadAll(response.Body)
+			// defer response.Body.Close()
+			// if strings.Contains(string(respBody), "grafana") {
+
+			// }
 		}
 	}
 }
@@ -91,6 +100,13 @@ func (m mode) Run(args []string) {
 		os.Exit(0)
 	}
 
+	//Get port
+	port, err := utils.GetParam(args, "-p")
+	if err != nil {
+		fmt.Println("You have to set port here")
+		os.Exit(0)
+	}
+
 	//Mode logic
 	if moduleName == "" {
 		var wg sync.WaitGroup
@@ -109,7 +125,7 @@ func (m mode) Run(args []string) {
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
-			go checkGrafana(target.String(), &wg, sem)
+			go checkGrafana(target.String(), &wg, sem, port)
 			// time.Sleep(time.Second * 2)
 		}
 		wg.Wait()
