@@ -49,7 +49,6 @@ func getFlags(args []string) map[string]string {
 }
 
 func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string) {
-	// fmt.Println(target)
 	defer func() {
 		<-sem
 		wg.Done()
