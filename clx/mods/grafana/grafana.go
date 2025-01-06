@@ -26,7 +26,30 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
+func getFlags(args []string) map[string]string {
+	requiredParams := map[string]string{
+		"-M": "module",
+		"-t": "threads",
+		"-p": "ports",
+	}
+
+	flags := make(map[string]string)
+
+	for key, name := range requiredParams {
+		value, err := utils.GetParam(args, key)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(0)
+		}
+
+		flags[name] = value
+	}
+
+	return flags
+}
+
 func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string) {
+	// fmt.Println(target)
 	defer func() {
 		<-sem
 		wg.Done()
@@ -64,19 +87,14 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 				fmt.Println(err)
 			}
 
-			fmt.Println(response.StatusCode)
 			if response.StatusCode == 200 {
 				utils.Colorize(utils.ColorGreen, fmt.Sprintf("[*] %s - Default creds found! (%s)", target, creds))
 			}
-			// respBody, err := ioutil.ReadAll(response.Body)
-			// defer response.Body.Close()
-			// if strings.Contains(string(respBody), "grafana") {
-
-			// }
 		}
 	}
 }
 
+// Main func
 func (m mode) Run(args []string) {
 	if len(args) < 1 {
 		fmt.Println("Enter host or subnetwork")
@@ -84,36 +102,16 @@ func (m mode) Run(args []string) {
 	}
 
 	var targets = utils.ParseTargets(args[0])
-	// fmt.Println(targets)
 
-	//Get module
-	moduleName, err := utils.GetParam(args, "-M")
-	if err != nil {
-		fmt.Println("You have to chose module here")
-		os.Exit(0)
-	}
-
-	//Get threads number
-	threadsNumber, err := utils.GetParam(args, "-t")
-	if err != nil {
-		fmt.Println("You have to set threads number")
-		os.Exit(0)
-	}
-
-	//Get port
-	port, err := utils.GetParam(args, "-p")
-	if err != nil {
-		fmt.Println("You have to set port here")
-		os.Exit(0)
-	}
+	flags := getFlags(args)
 
 	//Mode logic
-	if moduleName == "" {
+	if flags["module"] == "" {
 		var wg sync.WaitGroup
 		var sem chan struct{}
 
-		if threadsNumber != "" {
-			threads, err := strconv.Atoi(threadsNumber)
+		if flags["threads"] != "" {
+			threads, err := strconv.Atoi(flags["threads"])
 			if err != nil {
 				fmt.Println("You have to set correct number of threads")
 				os.Exit(0)
@@ -125,8 +123,7 @@ func (m mode) Run(args []string) {
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
-			go checkGrafana(target.String(), &wg, sem, port)
-			// time.Sleep(time.Second * 2)
+			go checkGrafana(target.String(), &wg, sem, flags["ports"])
 		}
 		wg.Wait()
 	} else {
@@ -137,15 +134,15 @@ func (m mode) Run(args []string) {
 		}
 		modules := utils.GetModulesName(fmt.Sprintf("%s/mods/test/modules", filepath.Dir(rootPath)))
 
-		if !utils.Contains(modules, moduleName) {
-			fmt.Printf("there is no %s module, chose ones from list \n%s\n", moduleName, modules)
+		if !utils.Contains(modules, flags["module"]) {
+			fmt.Printf("there is no %s module, chose ones from list \n%s\n", flags["module"], modules)
 			return
 		}
 
-		if module, exists := registeredModules[moduleName]; exists {
+		if module, exists := registeredModules[flags["module"]]; exists {
 			module.RunModule("lol")
 		} else {
-			fmt.Printf("Module %s not found. Available modules: %v\n", moduleName, modules)
+			fmt.Printf("Module %s not found. Available modules: %v\n", flags["module"], modules)
 			os.Exit(1)
 		}
 	}
