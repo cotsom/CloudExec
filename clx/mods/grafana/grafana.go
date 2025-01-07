@@ -31,7 +31,7 @@ func getFlags(args []string) map[string]string {
 	requiredParams := map[string]string{
 		"-M":     "module",
 		"-t":     "threads",
-		"--port": "ports",
+		"--port": "port",
 		"-u":     "user",
 		"-p":     "password",
 	}
@@ -51,7 +51,7 @@ func getFlags(args []string) map[string]string {
 	return flags
 }
 
-func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string) {
+func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string) {
 	defer func() {
 		<-sem
 		wg.Done()
@@ -61,7 +61,9 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 		port = "3000"
 	}
 
-	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
+	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
+
+	// grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
@@ -81,18 +83,17 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	}
 
 	if strings.Contains(string(respBody), "grafana") {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana found!", target))
 		FoundTargets = append(FoundTargets, target)
-		for _, creds := range grafanaDefaultCreds {
-			url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
-			response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-			if err != nil {
-				fmt.Println(err)
-			}
+		url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-			if response.StatusCode == 200 {
-				utils.Colorize(utils.ColorGreen, fmt.Sprintf("[*] %s - Default creds found! (%s)", target, creds))
-			}
+		if response.StatusCode == 200 {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
+		} else {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
 		}
 	}
 }
@@ -124,7 +125,7 @@ func (m mode) Run(args []string) {
 	for _, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go checkGrafana(target.String(), &wg, sem, flags["ports"])
+		go checkGrafana(target.String(), &wg, sem, flags["port"], flags)
 	}
 	wg.Wait()
 
