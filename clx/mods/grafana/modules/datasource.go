@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -27,7 +28,12 @@ type Datasource struct {
 	ReadOnly    bool           `json:"readOnly"`
 }
 
-func (m Datasource) RunModule(targets []string, flags map[string]string) {
+func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.WaitGroup, sem chan struct{}) {
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
+
 	if flags["user"] == "" && flags["password"] == "" {
 		return
 	}
@@ -45,28 +51,26 @@ func (m Datasource) RunModule(targets []string, flags map[string]string) {
 		Timeout: 1 * time.Second,
 	}
 
-	for _, target := range targets {
-		url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
+	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
 
-		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-		if err != nil {
-			return
-		}
-		respBody, err := ioutil.ReadAll(response.Body)
-		defer response.Body.Close()
-		if err != nil {
-			fmt.Printf("client: could not read response body: %s\n", err)
-		}
-
-		err = json.Unmarshal(respBody, &datasources)
-		if err != nil {
-			fmt.Println("Ошибка разбора JSON:", err)
-			return
-		}
-
-		for _, datasource := range datasources {
-			utils.Colorize(utils.ColorYellow, fmt.Sprintf("[*] %s", datasource.Name))
-		}
-
+	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		return
 	}
+	respBody, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+	}
+
+	err = json.Unmarshal(respBody, &datasources)
+	if err != nil {
+		fmt.Println("Ошибка разбора JSON:", err)
+		return
+	}
+
+	for _, datasource := range datasources {
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[*] %s", datasource.Name))
+	}
+
 }

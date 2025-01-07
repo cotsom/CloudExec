@@ -17,15 +17,14 @@ import (
 type mode string
 
 type Module interface {
-	RunModule(targets []string, flags map[string]string)
+	RunModule(target string, flags map[string]string, wg *sync.WaitGroup, sem chan struct{})
 }
 
 var registeredModules = map[string]Module{
 	"datasource": modules.Datasource{},
+	"defcreds":   modules.Defcreds{},
 	// Add another modules here
 }
-
-var FoundTargets []string
 
 func getFlags(args []string) map[string]string {
 	requiredParams := map[string]string{
@@ -51,7 +50,7 @@ func getFlags(args []string) map[string]string {
 	return flags
 }
 
-func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string) {
+func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string, mu *sync.Mutex, foundTargets *[]string) {
 	defer func() {
 		<-sem
 		wg.Done()
@@ -62,8 +61,6 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	}
 
 	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
-
-	// grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
@@ -76,26 +73,35 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	if err != nil {
 		return
 	}
-	respBody, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
+	respBody, err := ioutil.ReadAll(response.Body)
+
 	if err != nil {
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
 
-	if strings.Contains(string(respBody), "grafana") {
-		FoundTargets = append(FoundTargets, target)
-		url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
-		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if response.StatusCode == 200 {
-			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
-		} else {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
-		}
+	if !strings.Contains(string(respBody), "grafana") {
+		return
 	}
+
+	//Use mutex for write to global var
+	mu.Lock()
+	*foundTargets = append(*foundTargets, target)
+	mu.Unlock()
+
+	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode == 200 {
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
+	} else {
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
+	}
+
 }
 
 // Main func
@@ -107,10 +113,12 @@ func (m mode) Run(args []string) {
 
 	var targets = utils.ParseTargets(args[0])
 	flags := getFlags(args)
+	var foundTargets []string
 
 	//Main logic
 	var wg sync.WaitGroup
 	var sem chan struct{}
+	var mu sync.Mutex
 
 	if flags["threads"] != "" {
 		threads, err := strconv.Atoi(flags["threads"])
@@ -122,29 +130,23 @@ func (m mode) Run(args []string) {
 	} else {
 		sem = make(chan struct{}, 100)
 	}
+
 	for _, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go checkGrafana(target.String(), &wg, sem, flags["port"], flags)
+		go checkGrafana(target.String(), &wg, sem, flags["port"], flags, &mu, &foundTargets)
 	}
 	wg.Wait()
 
 	//Mode logic
 	if flags["module"] != "" {
-		// rootPath, err := os.Executable()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-		// modules := utils.GetModulesName(fmt.Sprintf("%s/mods/grafana/modules", filepath.Dir(rootPath)))
-
-		// if !utils.Contains(modules, flags["module"]) {
-		// 	fmt.Printf("there is no %s module, chose ones from list \n%s\n", flags["module"], modules)
-		// 	return
-		// }
-
 		if module, exists := registeredModules[flags["module"]]; exists {
-			module.RunModule(FoundTargets, flags)
+			for _, target := range foundTargets {
+				wg.Add(1)
+				sem <- struct{}{}
+				go module.RunModule(target, flags, &wg, sem)
+			}
+			wg.Wait()
 		} else {
 			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
 			os.Exit(1)
