@@ -131,10 +131,11 @@ func (m mode) Run(args []string) {
 		sem = make(chan struct{}, 100)
 	}
 
-	for _, target := range targets {
+	for i, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
 		go checkGrafana(target.String(), &wg, sem, flags["port"], flags, &mu, &foundTargets)
+		fmt.Print(i)
 	}
 	wg.Wait()
 
