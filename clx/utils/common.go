@@ -71,3 +71,12 @@ func HttpRequest(targetUrl string, method string, data []byte, client http.Clien
 
 	return response, nil
 }
+
+func ProgressBar(allItems int, currentItem int, progress *int) {
+	percent := (currentItem * 100) / allItems
+
+	// bar := percent - *progress
+	// *progress = percent
+
+	fmt.Printf("\r[%s] %d", strings.Repeat("-", percent), percent)
+}

@@ -99,7 +99,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	if response.StatusCode == 200 {
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
 	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Grafana", target))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("\r[*] %s - Grafana", target))
 	}
 
 }
@@ -131,11 +131,12 @@ func (m mode) Run(args []string) {
 		sem = make(chan struct{}, 100)
 	}
 
+	progress := 0
 	for i, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
 		go checkGrafana(target.String(), &wg, sem, flags["port"], flags, &mu, &foundTargets)
-		fmt.Print(i)
+		utils.ProgressBar(len(targets), i+1, &progress)
 	}
 	wg.Wait()
 
