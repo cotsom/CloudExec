@@ -38,7 +38,7 @@ func (m Defcreds) RunModule(target string, flags map[string]string, wg *sync.Wai
 		defer response.Body.Close()
 
 		if response.StatusCode == 200 {
-			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s - Grafana (%s)", utils.ClearLine, target, creds))
 		}
 	}
 }

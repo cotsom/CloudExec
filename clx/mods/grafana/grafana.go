@@ -84,7 +84,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 		return
 	}
 
-	//Use mutex for write to global var
+	//Use mutex for write to var
 	mu.Lock()
 	*foundTargets = append(*foundTargets, target)
 	mu.Unlock()
@@ -97,9 +97,9 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	defer response.Body.Close()
 
 	if response.StatusCode == 200 {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Grafana! (%s)", target, creds))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s - Grafana! (%s)\n", utils.ClearLine, target, creds))
 	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("\r[*] %s - Grafana", target))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s - Grafana\n", utils.ClearLine, target))
 	}
 
 }

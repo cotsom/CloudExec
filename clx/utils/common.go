@@ -48,12 +48,13 @@ func ValidIP4(ipAddress string) bool {
 type Color string
 
 const (
-	ColorBlack  Color = "\u001b[30m"
-	ColorRed    Color = "\u001b[31m"
-	ColorGreen  Color = "\u001b[32m"
-	ColorYellow Color = "\u001b[33m"
-	ColorBlue   Color = "\u001b[34m"
-	ColorReset  Color = "\u001b[0m"
+	ColorBlack  Color  = "\u001b[30m"
+	ColorRed    Color  = "\u001b[31m"
+	ColorGreen  Color  = "\u001b[32m"
+	ColorYellow Color  = "\u001b[33m"
+	ColorBlue   Color  = "\u001b[34m"
+	ColorReset  Color  = "\u001b[0m"
+	ClearLine   string = "\033[2K\n"
 )
 
 func Colorize(color Color, message string) {
