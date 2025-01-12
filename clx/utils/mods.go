@@ -1,17 +1,19 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"net/netip"
 	"os"
 )
 
-func ParseTargets(arg string) []netip.Addr {
-	var targets []netip.Addr
+func ParseTargets(arg string) []string {
+	var targets []string
 
 	ip, err := netip.ParseAddr(arg)
 	if err == nil {
-		return append(targets, ip)
+		return append(targets, ip.String())
 	}
 
 	prefix, err := netip.ParsePrefix(arg)
@@ -21,7 +23,7 @@ func ParseTargets(arg string) []netip.Addr {
 	}
 
 	for addr := prefix.Addr(); prefix.Contains(addr); addr = addr.Next() {
-		targets = append(targets, addr)
+		targets = append(targets, addr.String())
 	}
 
 	if len(targets) < 2 {
@@ -30,7 +32,7 @@ func ParseTargets(arg string) []netip.Addr {
 
 	//Delete .0 and .255 targets
 	for i := 0; i < 2; i++ {
-		first_target := []rune(targets[0].String())
+		first_target := []rune(targets[0])
 		if (string(first_target[len(first_target)-2:]) == ".0") || (string(first_target[len(first_target)-3:]) == "255") {
 			targets[0] = targets[len(targets)-1] // Copy last element to index i.
 			targets = targets[:len(targets)-1]   // Truncate slice.
@@ -38,4 +40,26 @@ func ParseTargets(arg string) []netip.Addr {
 	}
 
 	return targets
+}
+
+func ParseTargetsFromList(inputFile string) []string {
+	file, err := os.Open(inputFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lines := make([]string, 0)
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return lines
 }

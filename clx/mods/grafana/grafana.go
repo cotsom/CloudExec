@@ -33,6 +33,7 @@ func getFlags(args []string) map[string]string {
 		"--port": "port",
 		"-u":     "user",
 		"-p":     "password",
+		"-iL":    "inputlist",
 	}
 
 	flags := make(map[string]string)
@@ -97,9 +98,9 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	defer response.Body.Close()
 
 	if response.StatusCode == 200 {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s - Grafana! (%s)\n", utils.ClearLine, target, creds))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
 	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s - Grafana\n", utils.ClearLine, target))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
 	}
 
 }
@@ -111,15 +112,22 @@ func (m mode) Run(args []string) {
 		return
 	}
 
-	var targets = utils.ParseTargets(args[0])
 	flags := getFlags(args)
+	var targets []string
+	if flags["inputlist"] != "" {
+		targets = utils.ParseTargetsFromList(flags["inputlist"])
+	} else {
+		targets = utils.ParseTargets(args[0])
+	}
+
 	var foundTargets []string
 
-	//Main logic
+	//MAIN LOGIC
 	var wg sync.WaitGroup
 	var sem chan struct{}
 	var mu sync.Mutex
 
+	//set threads
 	if flags["threads"] != "" {
 		threads, err := strconv.Atoi(flags["threads"])
 		if err != nil {
@@ -135,9 +143,10 @@ func (m mode) Run(args []string) {
 	for i, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go checkGrafana(target.String(), &wg, sem, flags["port"], flags, &mu, &foundTargets)
+		go checkGrafana(target, &wg, sem, flags["port"], flags, &mu, &foundTargets)
 		utils.ProgressBar(len(targets), i+1, &progress)
 	}
+	fmt.Println("")
 	wg.Wait()
 
 	//Mode logic

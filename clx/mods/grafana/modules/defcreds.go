@@ -17,11 +17,9 @@ func (m Defcreds) RunModule(target string, flags map[string]string, wg *sync.Wai
 	}()
 
 	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
-	var port string
+	port := "3000"
 
-	if flags["port"] == "" {
-		port = "3000"
-	} else {
+	if flags["port"] != "" {
 		port = flags["port"]
 	}
 

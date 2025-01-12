@@ -134,7 +134,7 @@ func (m mode) Run(args []string) {
 		for _, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
-			go checkKube(target.String(), &wg, sem)
+			go checkKube(target, &wg, sem)
 
 		}
 		wg.Wait()

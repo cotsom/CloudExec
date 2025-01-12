@@ -16,7 +16,7 @@ type ModePlugin interface {
 func main() {
 	if len(os.Args) < 2 {
 		utils.Colorize(utils.ColorRed, "choose mode")
-		os.Exit(0)
+		return
 	}
 
 	mode := os.Args[1]

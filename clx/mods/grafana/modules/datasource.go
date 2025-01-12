@@ -39,11 +39,9 @@ func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.W
 	}
 
 	var datasources []Datasource
-	var port string
+	port := "3000"
 
-	if flags["port"] == "" {
-		port = "3000"
-	} else {
+	if flags["port"] != "" {
 		port = flags["port"]
 	}
 
@@ -65,7 +63,7 @@ func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.W
 
 	err = json.Unmarshal(respBody, &datasources)
 	if err != nil {
-		fmt.Println("Ошибка разбора JSON:", err)
+		fmt.Println(err)
 		return
 	}
 
