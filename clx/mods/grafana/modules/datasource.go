@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -28,11 +27,11 @@ type Datasource struct {
 	ReadOnly    bool           `json:"readOnly"`
 }
 
-func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.WaitGroup, sem chan struct{}) {
-	defer func() {
-		<-sem
-		wg.Done()
-	}()
+func (m Datasource) RunModule(target string, flags map[string]string) {
+	// defer func() {
+	// 	<-sem
+	// 	wg.Done()
+	// }()
 
 	if flags["user"] == "" && flags["password"] == "" {
 		return
@@ -55,6 +54,11 @@ func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.W
 	if err != nil {
 		return
 	}
+
+	if response.StatusCode == 401 {
+		return
+	}
+
 	respBody, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
@@ -68,7 +72,8 @@ func (m Datasource) RunModule(target string, flags map[string]string, wg *sync.W
 	}
 
 	for _, datasource := range datasources {
-		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[*] %s", datasource.Name))
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", target, datasource.Name))
 	}
+	fmt.Println("")
 
 }

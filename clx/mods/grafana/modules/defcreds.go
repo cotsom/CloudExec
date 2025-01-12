@@ -4,17 +4,16 @@ import (
 	"clx/utils"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 )
 
 type Defcreds struct{}
 
-func (m Defcreds) RunModule(target string, flags map[string]string, wg *sync.WaitGroup, sem chan struct{}) {
-	defer func() {
-		<-sem
-		wg.Done()
-	}()
+func (m Defcreds) RunModule(target string, flags map[string]string) {
+	// defer func() {
+	// 	<-sem
+	// 	wg.Done()
+	// }()
 
 	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 	port := "3000"

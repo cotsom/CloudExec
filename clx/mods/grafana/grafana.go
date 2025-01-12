@@ -17,7 +17,7 @@ import (
 type mode string
 
 type Module interface {
-	RunModule(target string, flags map[string]string, wg *sync.WaitGroup, sem chan struct{})
+	RunModule(target string, flags map[string]string)
 }
 
 var registeredModules = map[string]Module{
@@ -103,6 +103,15 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
 	}
 
+	if flags["module"] != "" {
+		if module, exists := registeredModules[flags["module"]]; exists {
+			module.RunModule(target, flags)
+		} else {
+			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
+			os.Exit(1)
+		}
+	}
+
 }
 
 // Main func
@@ -150,19 +159,19 @@ func (m mode) Run(args []string) {
 	wg.Wait()
 
 	//Mode logic
-	if flags["module"] != "" {
-		if module, exists := registeredModules[flags["module"]]; exists {
-			for _, target := range foundTargets {
-				wg.Add(1)
-				sem <- struct{}{}
-				go module.RunModule(target, flags, &wg, sem)
-			}
-			wg.Wait()
-		} else {
-			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
-			os.Exit(1)
-		}
-	}
+	// if flags["module"] != "" {
+	// 	if module, exists := registeredModules[flags["module"]]; exists {
+	// 		for _, target := range foundTargets {
+	// 			wg.Add(1)
+	// 			sem <- struct{}{}
+	// 			go module.RunModule(target, flags, &wg, sem)
+	// 		}
+	// 		wg.Wait()
+	// 	} else {
+	// 		fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
+	// 		os.Exit(1)
+	// 	}
+	// }
 
 }
 
