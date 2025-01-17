@@ -51,14 +51,14 @@ func getFlags(args []string) map[string]string {
 	return flags
 }
 
-func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string) {
+func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string) {
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
 
 	if port == "" {
-		port = "3000"
+		port = "80"
 	}
 
 	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
@@ -67,7 +67,6 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 		Timeout: 1 * time.Second,
 	}
 
-	//check grafana port
 	url := fmt.Sprintf("http://%s:%s", target, port)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
@@ -81,14 +80,9 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
 
-	if !strings.Contains(string(respBody), "grafana") {
+	if !strings.Contains(string(respBody), "gitlab") {
 		return
 	}
-
-	//Use mutex for write to var
-	// mu.Lock()
-	// *foundTargets = append(*foundTargets, target)
-	// mu.Unlock()
 
 	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
@@ -129,12 +123,9 @@ func (m mode) Run(args []string) {
 		targets = utils.ParseTargets(args[0])
 	}
 
-	// var foundTargets []string
-
 	//MAIN LOGIC
 	var wg sync.WaitGroup
 	var sem chan struct{}
-	// var mu sync.Mutex
 
 	//set threads
 	if flags["threads"] != "" {
@@ -152,26 +143,11 @@ func (m mode) Run(args []string) {
 	for i, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go checkGrafana(target, &wg, sem, flags["port"], flags)
+		go checkGitlab(target, &wg, sem, flags["port"], flags)
 		utils.ProgressBar(len(targets), i+1, &progress)
 	}
 	fmt.Println("")
 	wg.Wait()
-
-	//Mode logic
-	// if flags["module"] != "" {
-	// 	if module, exists := registeredModules[flags["module"]]; exists {
-	// 		for _, target := range foundTargets {
-	// 			wg.Add(1)
-	// 			sem <- struct{}{}
-	// 			go module.RunModule(target, flags, &wg, sem)
-	// 		}
-	// 		wg.Wait()
-	// 	} else {
-	// 		fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
-	// 		os.Exit(1)
-	// 	}
-	// }
 
 }
 
