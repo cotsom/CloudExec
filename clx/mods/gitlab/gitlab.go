@@ -61,7 +61,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port stri
 		port = "80"
 	}
 
-	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
+	// creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
@@ -71,6 +71,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port stri
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer response.Body.Close()
@@ -80,11 +81,27 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port stri
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
 
+	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
+		url = fmt.Sprintf("https://%s:%s", target, port)
+		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer response.Body.Close()
+		respBody, err = ioutil.ReadAll(response.Body)
+
+		if err != nil {
+			fmt.Printf("client: could not read response body: %s\n", err)
+		}
+	}
+
+	fmt.Println(string(respBody))
 	if !strings.Contains(string(respBody), "gitlab") {
 		return
 	}
 
-	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+	// url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		fmt.Println(err)
@@ -92,7 +109,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port stri
 	defer response.Body.Close()
 
 	if response.StatusCode == 200 {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
+		// utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
 	} else {
 		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
 	}

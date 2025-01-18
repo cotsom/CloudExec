@@ -128,6 +128,7 @@ func (m mode) Run(args []string) {
 	} else {
 		targets = utils.ParseTargets(args[0])
 	}
+	// fmt.Println(targets)
 
 	// var foundTargets []string
 

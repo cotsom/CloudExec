@@ -6,16 +6,26 @@ import (
 	"log"
 	"net/netip"
 	"os"
+	"regexp"
 )
+
+var domainRegex = regexp.MustCompile(`^([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$`)
 
 func ParseTargets(arg string) []string {
 	var targets []string
 
+	//parse ip
 	ip, err := netip.ParseAddr(arg)
 	if err == nil {
 		return append(targets, ip.String())
 	}
 
+	//parse domain
+	if domainRegex.MatchString(arg) {
+		return append(targets, arg)
+	}
+
+	//parse network
 	prefix, err := netip.ParsePrefix(arg)
 	if err != nil {
 		fmt.Println("Enter correct host or subnetwork")
