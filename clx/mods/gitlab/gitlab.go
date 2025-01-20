@@ -1,7 +1,7 @@
 package main
 
 import (
-	modules "clx/mods/grafana/modules"
+	modules "clx/mods/gitlab/modules"
 	utils "clx/utils"
 	"fmt"
 	"io/ioutil"
@@ -17,12 +17,11 @@ import (
 type mode string
 
 type Module interface {
-	RunModule(target string, flags map[string]string)
+	RunModule(target string, flags map[string]string, scheme string)
 }
 
 var registeredModules = map[string]Module{
-	"datasource": modules.Datasource{},
-	"defcreds":   modules.Defcreds{},
+	"loginbypass": modules.Loginbypass{},
 	// Add another modules here
 }
 
@@ -51,27 +50,27 @@ func getFlags(args []string) map[string]string {
 	return flags
 }
 
-func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port string, flags map[string]string) {
+func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
 
-	if port == "" {
-		port = "80"
-	}
+	scheme := "http"
 
-	// creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
+	if flags["port"] == "" {
+		flags["port"] = "80"
+	}
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s:%s", target, port)
+	// Make http req
+	url := fmt.Sprintf("http://%s:%s", target, flags["port"])
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	defer response.Body.Close()
@@ -81,42 +80,32 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, port stri
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
 
+	// Make https req
 	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
-		url = fmt.Sprintf("https://%s:%s", target, port)
+		url = fmt.Sprintf("https://%s:%s", target, flags["port"])
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
 		defer response.Body.Close()
 		respBody, err = ioutil.ReadAll(response.Body)
 
 		if err != nil {
-			fmt.Printf("client: could not read response body: %s\n", err)
+			// fmt.Printf("client: could not read response body: %s\n", err)
+			return
 		}
+		scheme = "https"
 	}
 
-	fmt.Println(string(respBody))
+	// fmt.Println(string(respBody))
 	if !strings.Contains(string(respBody), "gitlab") {
 		return
 	}
-
-	// url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
-	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode == 200 {
-		// utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
-	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
-	}
+	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Gitlab\n", utils.ClearLine, target, flags["port"]))
 
 	if flags["module"] != "" {
 		if module, exists := registeredModules[flags["module"]]; exists {
-			module.RunModule(target, flags)
+			module.RunModule(target, flags, scheme)
 		} else {
 			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
 			os.Exit(1)
@@ -160,7 +149,7 @@ func (m mode) Run(args []string) {
 	for i, target := range targets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go checkGitlab(target, &wg, sem, flags["port"], flags)
+		go checkGitlab(target, &wg, sem, flags)
 		utils.ProgressBar(len(targets), i+1, &progress)
 	}
 	fmt.Println("")
