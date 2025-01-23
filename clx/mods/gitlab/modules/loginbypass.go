@@ -10,7 +10,7 @@ import (
 type Loginbypass struct{}
 
 func (m Loginbypass) RunModule(target string, flags map[string]string, scheme string) {
-	bypassRoutes := [2]string{"explore", "api/v4/projects?visibility=public"}
+	bypassRoutes := [3]string{"explore", "api/v4/projects?visibility=public", "search?search="}
 	port := "80"
 
 	if flags["port"] != "" {
