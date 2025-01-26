@@ -26,12 +26,13 @@ var registeredModules = map[string]Module{
 
 func getFlags(args []string) map[string]string {
 	requiredParams := map[string]string{
-		"-M":     "module",
-		"-t":     "threads",
-		"--port": "port",
-		"-u":     "user",
-		"-p":     "password",
-		"-iL":    "inputlist",
+		"-M":      "module",
+		"-t":      "threads",
+		"--port":  "port",
+		"-u":      "user",
+		"-p":      "password",
+		"-iL":     "inputlist",
+		"--topic": "topic",
 	}
 
 	flags := make(map[string]string)
