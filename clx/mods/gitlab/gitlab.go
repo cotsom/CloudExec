@@ -57,6 +57,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 	}()
 
 	scheme := "http"
+	gitlabRoute := "users/sign_in"
 
 	if flags["port"] == "" {
 		flags["port"] = "80"
@@ -67,7 +68,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 	}
 
 	// Make http req
-	url := fmt.Sprintf("http://%s:%s", target, flags["port"])
+	url := fmt.Sprintf("http://%s:%s/%s", target, flags["port"], gitlabRoute)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
@@ -82,7 +83,7 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 
 	// Make https req
 	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
-		url = fmt.Sprintf("https://%s:%s", target, flags["port"])
+		url = fmt.Sprintf("https://%s:%s/%s", target, flags["port"], gitlabRoute)
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			return
