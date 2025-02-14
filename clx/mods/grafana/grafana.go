@@ -98,6 +98,9 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, port str
 	defer response.Body.Close()
 
 	if response.StatusCode == 200 {
+		if flags["user"] == "" && flags["password"] == "" {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana with public dashboards! (%s)\n", utils.ClearLine, target, port, creds))
+		}
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
 	} else {
 		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))

@@ -98,7 +98,7 @@ func (m mode) Run(args []string) {
 	} else {
 		targets = utils.ParseTargets(args[0])
 	}
-	// fmt.Println(targets)
+	fmt.Println(targets)
 
 	//MAIN LOGIC
 	var wg sync.WaitGroup

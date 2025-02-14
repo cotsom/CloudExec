@@ -10,11 +10,6 @@ import (
 type Defcreds struct{}
 
 func (m Defcreds) RunModule(target string, flags map[string]string) {
-	// defer func() {
-	// 	<-sem
-	// 	wg.Done()
-	// }()
-
 	grafanaDefaultCreds := [3]string{"admin:admin", "admin:prom-operator", "admin:openbmp"}
 	port := "3000"
 
@@ -27,7 +22,7 @@ func (m Defcreds) RunModule(target string, flags map[string]string) {
 	}
 
 	for _, creds := range grafanaDefaultCreds {
-		url := fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+		url := fmt.Sprintf("http://%s@%s:%s/api/org", creds, target, port)
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			fmt.Println(err)
