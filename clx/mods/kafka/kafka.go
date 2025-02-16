@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 // mode type for plugin's symbol
 type mode string
 
 type Module interface {
-	RunModule(target string, flags map[string]string, conn *kafka.Conn)
+	RunModule(target string, flags map[string]string, conn *kafka.Conn, dialer *kafka.Dialer)
 }
 
 var registeredModules = map[string]Module{
@@ -26,13 +27,14 @@ var registeredModules = map[string]Module{
 
 func getFlags(args []string) map[string]string {
 	requiredParams := map[string]string{
-		"-M":      "module",
-		"-t":      "threads",
-		"--port":  "port",
-		"-u":      "user",
-		"-p":      "password",
-		"-iL":     "inputlist",
-		"--topic": "topic",
+		"-M":          "module",
+		"-t":          "threads",
+		"--port":      "port",
+		"-u":          "user",
+		"-p":          "password",
+		"-iL":         "inputlist",
+		"--topic":     "topic",
+		"--mechanism": "mechanism",
 	}
 
 	flags := make(map[string]string)
@@ -59,23 +61,50 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 	if flags["port"] == "" {
 		flags["port"] = "9092"
 	}
-
-	dialer := &kafka.Dialer{
-		Timeout: 1 * time.Second,
-	}
 	broker := fmt.Sprintf("%s:%s", target, flags["port"])
 
-	conn, err := dialer.Dial("tcp", broker)
-	if err != nil {
-		return
+	var conn *kafka.Conn
+	var err error
+	var dialer *kafka.Dialer
+
+	switch flags["mechanism"] {
+	case "SASL_PLAIN":
+		mechanism := plain.Mechanism{
+			Username: flags["user"],
+			Password: flags["password"],
+		}
+
+		dialer = &kafka.Dialer{
+			Timeout:       1 * time.Second,
+			DualStack:     true,
+			SASLMechanism: mechanism,
+		}
+
+		conn, err = dialer.Dial("tcp", broker)
+		if err != nil {
+			fmt.Println(err)
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Kafka (%s:%s)\n", utils.ClearLine, target, flags["port"], flags["user"], flags["password"]))
+			return
+		}
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Kafka! (%s:%s)\n", utils.ClearLine, target, flags["port"], flags["user"], flags["password"]))
+	default:
+		dialer = &kafka.Dialer{
+			Timeout: 1 * time.Second,
+		}
+
+		conn, err = dialer.Dial("tcp", broker)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Kafka\n", utils.ClearLine, target, flags["port"]))
 	}
-	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[+] %s:%s - Kafka\n", utils.ClearLine, target, flags["port"]))
 	defer conn.Close()
 
 	// Start module on target
 	if flags["module"] != "" {
 		if module, exists := registeredModules[flags["module"]]; exists {
-			module.RunModule(target, flags, conn)
+			module.RunModule(target, flags, conn, dialer)
 		} else {
 			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], registeredModules)
 			os.Exit(1)
@@ -98,7 +127,7 @@ func (m mode) Run(args []string) {
 	} else {
 		targets = utils.ParseTargets(args[0])
 	}
-	fmt.Println(targets)
+	// fmt.Println(targets)
 
 	//MAIN LOGIC
 	var wg sync.WaitGroup

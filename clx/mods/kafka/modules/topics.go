@@ -11,20 +11,31 @@ import (
 
 type Topics struct{}
 
-func (m Topics) RunModule(target string, flags map[string]string, conn *kafka.Conn) {
+func (m Topics) RunModule(target string, flags map[string]string, conn *kafka.Conn, dialer *kafka.Dialer) {
 	if flags["topic"] != "" {
-		// make a new reader that consumes from topic-A, partition 0, at offset 42
-		r := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:   []string{target},
-			Topic:     flags["topic"],
-			MaxBytes:  1,
-			Partition: 0,
-		})
+		var r *kafka.Reader
+
+		if dialer != nil {
+			r = kafka.NewReader(kafka.ReaderConfig{
+				Brokers:  []string{target},
+				Topic:    flags["topic"],
+				GroupID:  "consumer-group-id",
+				Dialer:   dialer,
+				MaxBytes: 10e6,
+			})
+		} else {
+			r = kafka.NewReader(kafka.ReaderConfig{
+				Brokers:  []string{target},
+				Topic:    flags["topic"],
+				GroupID:  "consumer-group-id",
+				MaxBytes: 10e6,
+				// Partition: 0,
+			})
+		}
+
 		r.SetOffset(0)
 		for {
-			fmt.Println("qwe")
 			t, err := r.ReadMessage(context.Background())
-			fmt.Println("qwe")
 			if err != nil {
 				fmt.Println(err)
 				break
