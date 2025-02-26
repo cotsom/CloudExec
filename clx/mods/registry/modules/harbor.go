@@ -38,12 +38,14 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 
 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Harbor\n", utils.ClearLine, target, port))
 
-	url = fmt.Sprintf("%s://%s:%s@%s:%s/v2/_catalog", scheme, flags["user"], flags["password"], target, port)
+	url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/search?q=/", scheme, flags["user"], flags["password"], target, port)
+	fmt.Println(url)
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
 	}
 
+	fmt.Println(response.StatusCode)
 	if response.StatusCode == 401 {
 		utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Harbor - %s:%s\n", utils.ClearLine, target, port, flags["user"], flags["password"]))
 	}
