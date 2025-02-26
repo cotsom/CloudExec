@@ -26,6 +26,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	}
 
 	url := fmt.Sprintf("%s://%s:%s@%s:%s/", scheme, flags["user"], flags["password"], target, port)
+	fmt.Println(url)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
