@@ -1,14 +1,14 @@
 ## How to create your own module
 
-1. Create your module's directory (clx/mods/mymodule)
-2. Create file mymodule.go
-3. Implement the interface using the minimal module template
+1. Create your module's directory (clx/mods/mymode)
+2. Create file mymode.go
+3. Implement the interface using the minimal mode template
 
 ```Go
 package main
 
 import (
-	modules "clx/mods/test/modules"
+	modules "clx/mods/mymode/modules"
 )
 
 // mode type for plugin's symbol
@@ -31,5 +31,6 @@ func (m mode) Run(args []string) {
 var Mode mode
 
 ```
+BUILD: ./build-modules.sh && go build .
 
-USAGE: clx mymodule 192.168.1.5
+USAGE: clx mymode 192.168.1.5
