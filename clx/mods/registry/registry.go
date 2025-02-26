@@ -28,12 +28,13 @@ var registeredModules = map[string]Module{
 
 func getFlags(args []string) map[string]string {
 	requiredParams := map[string]string{
-		"-M":     "module",
-		"-t":     "threads",
-		"--port": "port",
-		"-u":     "user",
-		"-p":     "password",
-		"-iL":    "inputlist",
+		"-M":        "module",
+		"-t":        "threads",
+		"--port":    "port",
+		"-u":        "user",
+		"-p":        "password",
+		"-iL":       "inputlist",
+		"--timeout": "timeout",
 	}
 
 	flags := make(map[string]string)
@@ -65,8 +66,12 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		flags["port"] = "5000"
 	}
 
+	if flags["timeout"] == "" {
+		flags["timeout"] = "1"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	// Make http req
