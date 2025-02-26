@@ -6,16 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
-type Images struct {
+type Harbor struct {
 	Repositories []string `json:"repositories"`
 }
 
-func (m Images) RunModule(target string, flags map[string]string, scheme string) {
+func (m Harbor) RunModule(target string, flags map[string]string, scheme string) {
 	port := flags["port"]
-	var images Images
+	var images Harbor
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
@@ -24,8 +25,21 @@ func (m Images) RunModule(target string, flags map[string]string, scheme string)
 		},
 	}
 
-	url := fmt.Sprintf("%s://%s:%s@%s:%s/v2/_catalog", scheme, flags["user"], flags["password"], target, port)
+	url := fmt.Sprintf("%s://%s:%s@%s:%s/", scheme, flags["user"], flags["password"], target, port)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		return
+	}
+	respBody, err := ioutil.ReadAll(response.Body)
+
+	if !strings.Contains(string(respBody), "harbor") {
+		return
+	}
+
+	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Harbor\n", utils.ClearLine, target, port))
+
+	url = fmt.Sprintf("%s://%s:%s@%s:%s/v2/_catalog", scheme, flags["user"], flags["password"], target, port)
+	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
 	}
@@ -34,7 +48,7 @@ func (m Images) RunModule(target string, flags map[string]string, scheme string)
 		return
 	}
 
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err = ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
 		fmt.Printf("client: could not read response body: %s\n", err)
@@ -49,5 +63,4 @@ func (m Images) RunModule(target string, flags map[string]string, scheme string)
 	for _, image := range images.Repositories {
 		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", target, image))
 	}
-
 }

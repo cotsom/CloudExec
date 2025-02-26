@@ -22,6 +22,7 @@ type Module interface {
 
 var registeredModules = map[string]Module{
 	"images": modules.Images{},
+	"harbor": modules.Harbor{},
 	// Add another modules here
 }
 
