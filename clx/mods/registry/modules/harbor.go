@@ -55,6 +55,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	if err != nil {
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
+	fmt.Println(respBody)
 
 	err = json.Unmarshal(respBody, &images)
 	if err != nil {
