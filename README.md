@@ -31,3 +31,5 @@ func (m mode) Run(args []string) {
 var Mode mode
 
 ```
+
+USAGE: clx mymodule 192.168.1.5
