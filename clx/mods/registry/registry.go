@@ -59,6 +59,10 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	}()
 
 	scheme := "http"
+	if flags["port"] == "https" {
+		scheme = "https"
+	}
+
 	regitryRoute := "v2/_catalog"
 	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
 
