@@ -59,7 +59,7 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	}()
 
 	scheme := "http"
-	if flags["port"] == "https" {
+	if flags["port"] == "443" {
 		scheme = "https"
 	}
 
