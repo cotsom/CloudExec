@@ -11,7 +11,16 @@ import (
 )
 
 type Harbor struct {
-	Repositories []string `json:"repositories"`
+	Repository []Repository `json:"repository"`
+}
+
+type Repository struct {
+	ArtifactCount  int    `json:"artifact_count"`
+	ProjectID      int    `json:"project_id"`
+	ProjectName    string `json:"project_name"`
+	ProjectPublic  bool   `json:"project_public"`
+	PullCount      int    `json:"pull_count"`
+	RepositoryName string `json:"repository_name"`
 }
 
 func (m Harbor) RunModule(target string, flags map[string]string, scheme string) {
@@ -19,7 +28,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	var images Harbor
 
 	client := http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: 10 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -39,13 +48,12 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Harbor\n", utils.ClearLine, target, port))
 
 	url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/search?q=/", scheme, flags["user"], flags["password"], target, port)
-	fmt.Println(url)
+
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
 	}
 
-	fmt.Println(response.StatusCode)
 	if response.StatusCode == 401 {
 		utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Harbor - %s:%s\n", utils.ClearLine, target, port, flags["user"], flags["password"]))
 	}
@@ -62,7 +70,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		return
 	}
 
-	for _, image := range images.Repositories {
-		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", target, image))
+	for _, image := range images.Repository {
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 	}
 }
