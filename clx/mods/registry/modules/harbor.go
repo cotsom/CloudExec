@@ -26,7 +26,6 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	}
 
 	url := fmt.Sprintf("%s://%s:%s@%s:%s/", scheme, flags["user"], flags["password"], target, port)
-	fmt.Println(url)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
@@ -46,7 +45,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	}
 
 	if response.StatusCode == 401 {
-		return
+		utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Harbor - %s:%s\n", utils.ClearLine, target, port, flags["user"], flags["password"]))
 	}
 
 	respBody, err = ioutil.ReadAll(response.Body)

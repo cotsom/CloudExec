@@ -76,7 +76,6 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 
 	// Make http req
 	url := fmt.Sprintf("http://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
-	fmt.Println(url)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
