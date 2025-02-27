@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -36,8 +37,12 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	var images Harbor
 	var artifacts []Artifact
 
+	if flags["timeout"] == "" {
+		flags["timeout"] = "1"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: time.Duration(timeout) * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -82,7 +87,6 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	for _, image := range images.Repository {
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 		repoNameSplit := strings.SplitN(image.RepositoryName, "/", 2)
-		// var layers map[string]interface{}
 
 		url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
