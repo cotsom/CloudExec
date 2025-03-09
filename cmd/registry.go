@@ -1,8 +1,11 @@
-package main
+/*
+Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+*/
+package cmd
 
 import (
-	modules "clx/mods/registry/modules"
-	utils "clx/utils"
+	modules "clx/internal/modules/registry"
+	utils "clx/internal/utils"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,10 +14,10 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-// mode type for plugin's symbol
-type mode string
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
 
 type Module interface {
 	RunModule(target string, flags map[string]string, scheme string)
@@ -26,30 +29,72 @@ var registeredModules = map[string]Module{
 	// Add another modules here
 }
 
-func getFlags(args []string) map[string]string {
-	requiredParams := map[string]string{
-		"-M":        "module",
-		"-t":        "threads",
-		"--port":    "port",
-		"-u":        "user",
-		"-p":        "password",
-		"-iL":       "inputlist",
-		"--timeout": "timeout",
-	}
+// registryCmd represents the registry command
+var registryCmd = &cobra.Command{
+	Use:   "registry",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
 
-	flags := make(map[string]string)
-
-	for key, name := range requiredParams {
-		value, err := utils.GetParam(args, key)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Println("Enter host or subnetwork")
+			return
 		}
 
-		flags[name] = value
-	}
+		flags := make(map[string]string)
+		cmd.Flags().VisitAll(func(f *pflag.Flag) {
+			flags[f.Name] = f.Value.String()
+		})
 
-	return flags
+		var targets []string
+		if flags["inputlist"] != "" {
+			targets = utils.ParseTargetsFromList(flags["inputlist"])
+		} else {
+			targets = utils.ParseTargets(args[0])
+		}
+
+		//MAIN LOGIC
+		var wg sync.WaitGroup
+		var sem chan struct{}
+
+		//set threads
+		if flags["threads"] != "" {
+			threads, err := strconv.Atoi(flags["threads"])
+			if err != nil {
+				fmt.Println("You have to set correct number of threads")
+				os.Exit(0)
+			}
+			sem = make(chan struct{}, threads)
+		} else {
+			sem = make(chan struct{}, 100)
+		}
+
+		progress := 0
+		for i, target := range targets {
+			wg.Add(1)
+			sem <- struct{}{}
+			go checkRegistry(target, &wg, sem, flags)
+			utils.ProgressBar(len(targets), i+1, &progress)
+		}
+		fmt.Println("")
+		wg.Wait()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(registryCmd)
+
+	grafanaCmd.Flags().IntP("threads", "t", 100, "threads lol")
+	grafanaCmd.Flags().StringP("port", "", "", "port lol")
+	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
+	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
+	grafanaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	grafanaCmd.Flags().StringP("timeout", "", "", "Choose mechanism")
 }
 
 func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
@@ -126,49 +171,3 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	}
 
 }
-
-// Main func
-func (m mode) Run(args []string) {
-	if len(args) < 1 {
-		fmt.Println("Enter host or subnetwork")
-		return
-	}
-
-	flags := getFlags(args)
-	var targets []string
-	if flags["inputlist"] != "" {
-		targets = utils.ParseTargetsFromList(flags["inputlist"])
-	} else {
-		targets = utils.ParseTargets(args[0])
-	}
-
-	//MAIN LOGIC
-	var wg sync.WaitGroup
-	var sem chan struct{}
-
-	//set threads
-	if flags["threads"] != "" {
-		threads, err := strconv.Atoi(flags["threads"])
-		if err != nil {
-			fmt.Println("You have to set correct number of threads")
-			os.Exit(0)
-		}
-		sem = make(chan struct{}, threads)
-	} else {
-		sem = make(chan struct{}, 100)
-	}
-
-	progress := 0
-	for i, target := range targets {
-		wg.Add(1)
-		sem <- struct{}{}
-		go checkRegistry(target, &wg, sem, flags)
-		utils.ProgressBar(len(targets), i+1, &progress)
-	}
-	fmt.Println("")
-	wg.Wait()
-
-}
-
-// exporting symbol "Mode"
-var Mode mode

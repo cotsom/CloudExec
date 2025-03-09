@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"clx/utils"
+	utils "clx/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

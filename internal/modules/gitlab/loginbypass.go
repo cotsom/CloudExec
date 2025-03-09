@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"clx/utils"
+	utils "clx/internal/utils"
 	"fmt"
 	"net/http"
 	"time"

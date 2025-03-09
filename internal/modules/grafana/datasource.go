@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"clx/utils"
+	utils "clx/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -38,17 +38,17 @@ func (m Datasource) RunModule(target string, flags map[string]string) {
 	}
 
 	var datasources []Datasource
-	port := "3000"
+	defport := "3000"
 
 	if flags["port"] != "" {
-		port = flags["port"]
+		defport = flags["port"]
 	}
 
 	client := http.Client{
 		Timeout: 1 * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
+	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, defport)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
