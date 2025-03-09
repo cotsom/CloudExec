@@ -33,7 +33,7 @@ var grafanadModules = map[string]GrafanaModule{
 // grafanaCmd represents the grafana command
 var grafanaCmd = &cobra.Command{
 	Use:   "grafana",
-	Short: "A brief description of your command",
+	Short: "discover & exploit Grafana",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

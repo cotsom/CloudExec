@@ -21,7 +21,7 @@ import (
 // kubeCmd represents the kube command
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
-	Short: "A brief description of your command",
+	Short: "discover & exploit Kubernetes",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

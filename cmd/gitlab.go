@@ -32,7 +32,7 @@ var gitlabdModules = map[string]GitlabModule{
 // gitlabCmd represents the gitlab command
 var gitlabCmd = &cobra.Command{
 	Use:   "gitlab",
-	Short: "A brief description of your command",
+	Short: "discover & exploit Gitlab",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

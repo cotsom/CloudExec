@@ -30,7 +30,7 @@ var kafkaModules = map[string]KafkaModule{
 // kafkaCmd represents the kafka command
 var kafkaCmd = &cobra.Command{
 	Use:   "kafka",
-	Short: "A brief description of your command",
+	Short: "discover & exploit Kafka",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
