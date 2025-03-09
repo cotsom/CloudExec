@@ -87,13 +87,14 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(kafkaCmd)
 
-	grafanaCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	grafanaCmd.Flags().StringP("port", "", "", "port lol")
-	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
-	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
-	grafanaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
-	grafanaCmd.Flags().StringP("mechanism", "", "", "Choose mechanism")
+	kafkaCmd.Flags().IntP("threads", "t", 100, "threads lol")
+	kafkaCmd.Flags().StringP("port", "", "", "port lol")
+	kafkaCmd.Flags().StringP("user", "u", "", "user lol")
+	kafkaCmd.Flags().StringP("password", "p", "", "password lol")
+	kafkaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	kafkaCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	kafkaCmd.Flags().StringP("mechanism", "", "", "Choose mechanism")
+	kafkaCmd.Flags().StringP("topic", "", "", "Choose topic to read")
 }
 
 func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {

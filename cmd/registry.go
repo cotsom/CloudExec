@@ -88,13 +88,13 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(registryCmd)
 
-	grafanaCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	grafanaCmd.Flags().StringP("port", "", "", "port lol")
-	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
-	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
-	grafanaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
-	grafanaCmd.Flags().StringP("timeout", "", "", "Choose mechanism")
+	registryCmd.Flags().IntP("threads", "t", 100, "threads lol")
+	registryCmd.Flags().StringP("port", "", "", "port lol")
+	registryCmd.Flags().StringP("user", "u", "", "user lol")
+	registryCmd.Flags().StringP("password", "p", "", "password lol")
+	registryCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	registryCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	registryCmd.Flags().StringP("timeout", "", "", "Choose mechanism")
 }
 
 func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {

@@ -85,12 +85,12 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(gitlabCmd)
 
-	grafanaCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	grafanaCmd.Flags().StringP("port", "", "", "port lol")
-	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
-	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
-	grafanaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	gitlabCmd.Flags().IntP("threads", "t", 100, "threads lol")
+	gitlabCmd.Flags().StringP("port", "", "", "port lol")
+	gitlabCmd.Flags().StringP("user", "u", "", "user lol")
+	gitlabCmd.Flags().StringP("password", "p", "", "password lol")
+	gitlabCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	gitlabCmd.Flags().StringP("module", "M", "", "Choose one of module")
 }
 
 func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
