@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	modules "clx/internal/modules/grafana"
-	utils "clx/internal/utils"
+	modules "github.com/cotsom/CloudExec/internal/modules/grafana"
+	utils "github.com/cotsom/CloudExec/internal/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

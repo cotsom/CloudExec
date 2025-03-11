@@ -1,10 +1,11 @@
 package modules
 
 import (
-	utils "clx/internal/utils"
 	"fmt"
 	"net/http"
 	"time"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Defcreds struct{}

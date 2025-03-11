@@ -1,10 +1,11 @@
 package modules
 
 import (
-	utils "clx/internal/utils"
 	"context"
 	"fmt"
 	"log"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 
 	"github.com/segmentio/kafka-go"
 )

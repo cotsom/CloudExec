@@ -4,7 +4,6 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	utils "clx/internal/utils"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

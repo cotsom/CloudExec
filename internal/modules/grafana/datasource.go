@@ -1,12 +1,13 @@
 package modules
 
 import (
-	utils "clx/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Datasource struct {

@@ -1,4 +1,4 @@
-module clx
+module github.com/cotsom/CloudExec
 
 go 1.23.4
 

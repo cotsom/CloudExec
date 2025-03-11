@@ -1,12 +1,13 @@
 package modules
 
 import (
-	"clx/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Images struct {

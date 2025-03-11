@@ -4,13 +4,14 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	modules "clx/internal/modules/kafka"
-	utils "clx/internal/utils"
 	"fmt"
 	"os"
 	"strconv"
 	"sync"
 	"time"
+
+	modules "github.com/cotsom/CloudExec/internal/modules/kafka"
+	utils "github.com/cotsom/CloudExec/internal/utils"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/plain"

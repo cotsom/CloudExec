@@ -1,7 +1,6 @@
 package modules
 
 import (
-	utils "clx/internal/utils"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Harbor struct {
@@ -121,9 +122,12 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 			err = json.Unmarshal(respBody, &data)
 			if err != nil {
 				fmt.Println("Ошибка при декодировании JSON:", err)
+				// fmt.Println(url)
 				// fmt.Println(string(respBody))
 				// return
 			}
+			// fmt.Println(string(respBody))
+			// fmt.Println(url)
 
 			prettyJSON, err := json.MarshalIndent(data, "", "  ")
 			if err != nil {
