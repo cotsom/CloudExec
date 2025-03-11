@@ -98,7 +98,8 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 		repoNameSplit := strings.SplitN(image.RepositoryName, "/", 2)
 
-		url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
+		// url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
+		url := "http://:@10.38.22.39:80/api/v2.0/projects/docker-hub-proxy/repositories/wurstmeister%252Fzookeeper/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1"
 
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
@@ -145,7 +146,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 				var url string
 				if artifact.AdditionLinks.BuildHistory.Href != "" {
 					url = fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.BuildHistory.Href)
-				} else if artifact.References[0].ChildDigest != "" {
+				} else if len(artifact.References) > 0 && artifact.References[0].ChildDigest != "" {
 					childDigest := artifact.References[0].ChildDigest
 					url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts/%s/additions/build_history", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"), childDigest)
 				}
