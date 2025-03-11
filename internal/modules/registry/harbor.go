@@ -98,8 +98,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 		repoNameSplit := strings.SplitN(image.RepositoryName, "/", 2)
 
-		// url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
-		url := "http://:@10.38.22.39:80/api/v2.0/projects/docker-hub-proxy/repositories/wurstmeister%252Fzookeeper/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1"
+		url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
 
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
@@ -118,8 +117,8 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		}
 
 		for _, artifact := range artifacts {
-			fmt.Println("==========================================", artifact)
-			fmt.Println("==========================================", url)
+			// fmt.Println("==========================================", artifact)
+			// fmt.Println("==========================================", url)
 			//Get all values in helm chart
 			if artifact.Type == "UNKNOWN" {
 				utils.Colorize(utils.ColorBlue, fmt.Sprintf("[?] %s - %s UNKNOWN\n", target, image.RepositoryName))
