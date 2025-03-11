@@ -30,7 +30,14 @@ type Artifact struct {
 		BuildHistory struct {
 			Href string `json:"href"`
 		} `json:"build_history"`
+		ValuesYAML struct {
+			Href string `json:"href"`
+		} `json:"values.yaml"`
 	} `json:"addition_links"`
+	References []struct {
+		ChildDigest string `json:"child_digest"`
+	} `json:"references"`
+	Type string `json:"type"`
 }
 
 func (m Harbor) RunModule(target string, flags map[string]string, scheme string) {
@@ -62,6 +69,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 
 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Harbor\n", utils.ClearLine, target, port))
 
+	//Get all images
 	url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/search?q=/", scheme, flags["user"], flags["password"], target, port)
 
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
@@ -86,10 +94,12 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	}
 
 	for _, image := range images.Repository {
+		//Get all artifacts in image
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 		repoNameSplit := strings.SplitN(image.RepositoryName, "/", 2)
 
 		url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
+
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			return
@@ -107,36 +117,64 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		}
 
 		for _, artifact := range artifacts {
-			url := fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.BuildHistory.Href)
-			response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-			if err != nil {
-				return
-			}
-			respBody, err = ioutil.ReadAll(response.Body)
-			defer response.Body.Close()
-			if err != nil {
-				fmt.Printf("client: could not read response body: %s\n", err)
-			}
+			fmt.Println("==========================================", artifact)
+			fmt.Println("==========================================", url)
+			//Get all values in helm chart
+			if artifact.Type == "UNKNOWN" {
+				utils.Colorize(utils.ColorBlue, fmt.Sprintf("[?] %s - %s UNKNOWN\n", target, image.RepositoryName))
+			} else if artifact.Type == "CHART" {
+				utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s HELM CHART\n", target, image.RepositoryName))
+				if artifact.AdditionLinks.ValuesYAML.Href != "" {
+					valuesYAMLURL := fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.ValuesYAML.Href)
 
-			var data interface{}
-			err = json.Unmarshal(respBody, &data)
-			if err != nil {
-				fmt.Println("Ошибка при декодировании JSON:", err)
-				// fmt.Println(url)
-				// fmt.Println(string(respBody))
-				// return
-			}
-			// fmt.Println(string(respBody))
-			// fmt.Println(url)
+					response, err = utils.HttpRequest(valuesYAMLURL, http.MethodGet, []byte(""), client)
+					if err != nil {
+						continue
+					}
 
-			prettyJSON, err := json.MarshalIndent(data, "", "  ")
-			if err != nil {
-				fmt.Println("Ошибка при форматировании JSON:", err)
-				return
-			}
+					respBody, err = ioutil.ReadAll(response.Body)
+					defer response.Body.Close()
+					if err != nil {
+						fmt.Printf("client: could not read response body: %s\n", err)
+						continue
+					}
+					utils.Colorize(utils.ColorYellow, fmt.Sprintf("Values.yaml for Helm chart in repository %s:\n%s\n", image.RepositoryName, string(respBody)))
+				}
+			} else {
+				//Get all layers in image artifact
+				var url string
+				if artifact.AdditionLinks.BuildHistory.Href != "" {
+					url = fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.BuildHistory.Href)
+				} else if artifact.References[0].ChildDigest != "" {
+					childDigest := artifact.References[0].ChildDigest
+					url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts/%s/additions/build_history", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"), childDigest)
+				}
 
-			fmt.Println(string(prettyJSON))
-			utils.Colorize(utils.ColorYellow, fmt.Sprintf("%s\n", string(prettyJSON)))
+				response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+				if err != nil {
+					return
+				}
+				respBody, err = ioutil.ReadAll(response.Body)
+				defer response.Body.Close()
+				if err != nil {
+					fmt.Printf("client: could not read response body: %s\n", err)
+				}
+
+				var data interface{}
+				err = json.Unmarshal(respBody, &data)
+				if err != nil {
+					fmt.Println("Ошибка при декодировании JSON:", err)
+					// return
+				}
+
+				prettyJSON, err := json.MarshalIndent(data, "", "  ")
+				if err != nil {
+					fmt.Println("Ошибка при форматировании JSON:", err)
+					return
+				}
+
+				utils.Colorize(utils.ColorYellow, fmt.Sprintf("%s\n", string(prettyJSON)))
+			}
 		}
 	}
 }
