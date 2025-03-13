@@ -102,7 +102,8 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
-			return
+			fmt.Println("Error send req:", err)
+			continue
 		}
 		respBody, err = ioutil.ReadAll(response.Body)
 		defer response.Body.Close()
@@ -113,7 +114,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		err := json.Unmarshal(respBody, &artifacts)
 		if err != nil {
 			fmt.Println("Error unmarshalling JSON:", err)
-			return
+			continue
 		}
 
 		for _, artifact := range artifacts {
@@ -142,7 +143,6 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 				}
 			} else {
 				//Get all layers in image artifact
-				var url string
 				if artifact.AdditionLinks.BuildHistory.Href != "" {
 					url = fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.BuildHistory.Href)
 				} else if len(artifact.References) > 0 && artifact.References[0].ChildDigest != "" {
@@ -152,7 +152,8 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 
 				response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 				if err != nil {
-					return
+					fmt.Println("Error send req:", err)
+					continue
 				}
 				respBody, err = ioutil.ReadAll(response.Body)
 				defer response.Body.Close()
@@ -163,13 +164,13 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 				var data interface{}
 				err = json.Unmarshal(respBody, &data)
 				if err != nil {
-					fmt.Println("Ошибка при декодировании JSON:", err)
-					// return
+					fmt.Println("Error unmarshalling artifact JSON:", err)
+					continue
 				}
 
 				prettyJSON, err := json.MarshalIndent(data, "", "  ")
 				if err != nil {
-					fmt.Println("Ошибка при форматировании JSON:", err)
+					fmt.Println("Error unmarshalling artifact JSON:", err)
 					return
 				}
 
