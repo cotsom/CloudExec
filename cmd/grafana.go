@@ -110,7 +110,7 @@ func init() {
 	grafanaCmd.Flags().StringP("port", "", "", "port lol")
 	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
 	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
-	grafanaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	grafanaCmd.Flags().StringP("inputlist", "i", "", "inputlist")
 	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
 }
 
@@ -132,7 +132,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 
 	//check grafana port
 	url := fmt.Sprintf("http://%s:%s", target, flags["port"])
-	fmt.Println(url)
+	// fmt.Println(url)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
