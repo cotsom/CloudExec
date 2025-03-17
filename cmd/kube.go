@@ -30,15 +30,15 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("Enter host or subnetwork")
-			return
-		}
-
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			flags[f.Name] = f.Value.String()
 		})
+
+		if (len(args) < 1) && (flags["inputlist"] != "") {
+			fmt.Println("Enter host / subnetwork / input list")
+			return
+		}
 
 		var targets []string
 		if flags["inputlist"] != "" {
