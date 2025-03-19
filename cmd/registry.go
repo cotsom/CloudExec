@@ -95,7 +95,7 @@ func init() {
 	registryCmd.Flags().StringP("password", "p", "", "password lol")
 	registryCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
 	registryCmd.Flags().StringP("module", "M", "", "Choose one of module")
-	registryCmd.Flags().StringP("timeout", "", "", "Choose mechanism")
+	registryCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 
 func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {

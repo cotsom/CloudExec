@@ -26,7 +26,21 @@ type GitlabModule interface {
 
 var gitlabdModules = map[string]GitlabModule{
 	"loginbypass": modules.Loginbypass{},
+	"accesslvl":   modules.Accesslvl{},
 	// Add another modules here
+}
+
+func init() {
+	rootCmd.AddCommand(gitlabCmd)
+
+	gitlabCmd.Flags().IntP("threads", "t", 100, "threads lol")
+	gitlabCmd.Flags().StringP("port", "", "", "port lol")
+	gitlabCmd.Flags().StringP("user", "u", "", "user lol")
+	gitlabCmd.Flags().StringP("password", "p", "", "password lol")
+	gitlabCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
+	gitlabCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	gitlabCmd.Flags().StringP("token", "", "", "set token")
+	gitlabCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 
 // gitlabCmd represents the gitlab command
@@ -80,17 +94,6 @@ to quickly create a Cobra application.`,
 		fmt.Println("")
 		wg.Wait()
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(gitlabCmd)
-
-	gitlabCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	gitlabCmd.Flags().StringP("port", "", "", "port lol")
-	gitlabCmd.Flags().StringP("user", "u", "", "user lol")
-	gitlabCmd.Flags().StringP("password", "p", "", "password lol")
-	gitlabCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	gitlabCmd.Flags().StringP("module", "M", "", "Choose one of module")
 }
 
 func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
