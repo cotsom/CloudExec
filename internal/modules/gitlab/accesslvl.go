@@ -16,8 +16,18 @@ type Accesslvl struct {
 }
 
 type Project struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+	Id          int         `json:"id"`
+	Name        string      `json:"name"`
+	Permissions Permissions `json:"permissions"`
+}
+
+type Permissions struct {
+	ProjectAccess *GroupAccess `json:"project_access"`
+	GroupAccess   *GroupAccess `json:"group_access"`
+}
+
+type GroupAccess struct {
+	AccessLevel int `json:"access_level"`
 }
 
 type User struct {
@@ -39,7 +49,6 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 	if err != nil {
 		fmt.Println("Error unmarshalling JSON:", err)
 	}
-	// fmt.Println(user.Username)
 
 	body := getProjects(target, flags, scheme, port)
 	err = json.Unmarshal(body, &projects)
@@ -48,22 +57,25 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 	}
 
 	for _, project := range projects {
-		fmt.Println("YOUR ACCESS LEVEL FOR PROJECT:", project.Name)
-
+		fmt.Println("=====================", project.Name, "=====================")
+		fmt.Printf("Group Access Level: %d\n\n", project.Permissions.GroupAccess.AccessLevel)
 		body = checkPermissions(target, flags, scheme, port, project.Id)
 
-		fmt.Println(string(body))
+		// fmt.Println(string(body))
 
 		err := json.Unmarshal(body, &access_levels)
 		if err != nil {
 			fmt.Println("Error unmarshalling JSON:", err)
 		}
 
-		for _, access_level := range access_levels {
-			// if access_level.Username == string(username) {
-			fmt.Println(access_level.Accesslvl)
-			fmt.Println(access_level.Username)
-			// }
+		if project.Permissions.ProjectAccess != nil {
+			for _, access_level := range access_levels {
+				if access_level.Username == string(username) {
+					fmt.Println("YOUR OWN ACCESS LEVEL FOR PROJECT:", project.Name)
+					fmt.Println(access_level.Accesslvl)
+					fmt.Println(access_level.Username)
+				}
+			}
 		}
 
 	}
