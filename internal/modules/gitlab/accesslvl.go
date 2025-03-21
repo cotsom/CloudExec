@@ -19,6 +19,7 @@ type Project struct {
 	Id          int         `json:"id"`
 	Name        string      `json:"name"`
 	Permissions Permissions `json:"permissions"`
+	Url         string      `json:"http_url_to_repo"`
 }
 
 type Permissions struct {

@@ -27,6 +27,7 @@ type GitlabModule interface {
 var gitlabdModules = map[string]GitlabModule{
 	"loginbypass": modules.Loginbypass{},
 	"accesslvl":   modules.Accesslvl{},
+	"clone":       modules.Clone{},
 	// Add another modules here
 }
 
