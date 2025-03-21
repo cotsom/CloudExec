@@ -15,11 +15,16 @@ type Accesslvl struct {
 	Username  string `json:"name"`
 }
 
+type SharedWithGroup struct {
+	GroupAccessLevel int `json:"group_access_level"`
+}
+
 type Project struct {
-	Id          int         `json:"id"`
-	Name        string      `json:"name"`
-	Permissions Permissions `json:"permissions"`
-	Url         string      `json:"http_url_to_repo"`
+	Id               int               `json:"id"`
+	Name             string            `json:"name"`
+	Permissions      Permissions       `json:"permissions"`
+	Url              string            `json:"http_url_to_repo"`
+	SharedWithGroups []SharedWithGroup `json:"shared_with_groups"`
 }
 
 type Permissions struct {
@@ -54,15 +59,22 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 	body := getProjects(target, flags, scheme, port)
 	err = json.Unmarshal(body, &projects)
 	if err != nil {
-		fmt.Println("Error unmarshalling JSON:", err)
+		fmt.Println("Can't read projects", string(body))
 	}
 
 	for _, project := range projects {
 		fmt.Println("=====================", project.Name, "=====================")
-		fmt.Printf("Group Access Level: %d\n\n", project.Permissions.GroupAccess.AccessLevel)
-		body = checkPermissions(target, flags, scheme, port, project.Id)
+		if project.Permissions.GroupAccess != nil {
+			fmt.Printf("Group Access Level: %d\n\n", project.Permissions.GroupAccess.AccessLevel)
+		} else if project.SharedWithGroups != nil {
+			for _, group := range project.SharedWithGroups {
+				fmt.Printf("Group Access Level: %d\n\n", group.GroupAccessLevel)
+			}
+		} else {
+			fmt.Println("Can't get group access")
+		}
 
-		// fmt.Println(string(body))
+		body = checkPermissions(target, flags, scheme, port, project.Id)
 
 		err := json.Unmarshal(body, &access_levels)
 		if err != nil {
@@ -71,7 +83,7 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 
 		if project.Permissions.ProjectAccess != nil {
 			for _, access_level := range access_levels {
-				if access_level.Username == string(username) {
+				if access_level.Username == user.Username {
 					fmt.Println("YOUR OWN ACCESS LEVEL FOR PROJECT:", project.Name)
 					fmt.Println(access_level.Accesslvl)
 					fmt.Println(access_level.Username)
