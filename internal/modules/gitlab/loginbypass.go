@@ -3,6 +3,7 @@ package modules
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	utils "github.com/cotsom/CloudExec/internal/utils"
@@ -18,11 +19,12 @@ func (m Loginbypass) RunModule(target string, flags map[string]string, scheme st
 		port = flags["port"]
 	}
 
+	if flags["timeout"] == "" {
+		flags["timeout"] = "10"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
-		Timeout: 1 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	for _, route := range bypassRoutes {
