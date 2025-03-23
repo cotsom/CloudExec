@@ -4,12 +4,16 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	utils "github.com/cotsom/CloudExec/internal/utils"
+	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -23,6 +27,7 @@ func init() {
 	postgresCmd.Flags().StringP("password", "p", "", "password")
 	postgresCmd.Flags().StringP("inputlist", "i", "", "inputlist")
 	postgresCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	postgresCmd.Flags().StringP("database", "d", "postgres", "select a database to connect to")
 }
 
 // postgresCmd represents the postgres command
@@ -47,14 +52,6 @@ to quickly create a Cobra application.`,
 		}
 
 		targets := utils.GetTargets(flags, args)
-
-		// var targets []string
-		// if flags["inputlist"] != "" {
-		// 	targets = utils.ParseTargetsFromList(flags["inputlist"])
-		// } else {
-		// 	targets = utils.ParseTargets(args[0])
-		// }
-		// fmt.Println(targets)
 
 		//MAIN LOGIC
 		var wg sync.WaitGroup
@@ -81,4 +78,28 @@ to quickly create a Cobra application.`,
 }
 
 func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
+
+	if flags["port"] == "" {
+		flags["port"] = "5432"
+	}
+
+	// if flags["user"] != "" && flags["passwords"] != ""{}
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", flags["user"], flags["password"], target, flags["port"], flags["database"])
+	fmt.Println(dbURL)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	conn, err := pgx.Connect(ctx, dbURL)
+	if err != nil {
+		// fmt.Println(err)
+		if (strings.Contains(err.Error(), "password authentication")) || (strings.Contains(err.Error(), "no PostgreSQL user name specified")) {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, flags["port"]))
+		}
+	}
+	defer conn.Close(context.Background())
 }
