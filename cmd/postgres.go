@@ -14,6 +14,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func init() {
+	rootCmd.AddCommand(postgresCmd)
+
+	postgresCmd.Flags().IntP("threads", "t", 100, "threads")
+	postgresCmd.Flags().StringP("port", "", "", "port")
+	postgresCmd.Flags().StringP("user", "u", "", "user")
+	postgresCmd.Flags().StringP("password", "p", "", "password")
+	postgresCmd.Flags().StringP("inputlist", "i", "", "inputlist")
+	postgresCmd.Flags().StringP("module", "M", "", "Choose one of module")
+}
+
 // postgresCmd represents the postgres command
 var postgresCmd = &cobra.Command{
 	Use:   "postgres",
@@ -35,12 +46,14 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		var targets []string
-		if flags["inputlist"] != "" {
-			targets = utils.ParseTargetsFromList(flags["inputlist"])
-		} else {
-			targets = utils.ParseTargets(args[0])
-		}
+		targets := utils.GetTargets(flags, args)
+
+		// var targets []string
+		// if flags["inputlist"] != "" {
+		// 	targets = utils.ParseTargetsFromList(flags["inputlist"])
+		// } else {
+		// 	targets = utils.ParseTargets(args[0])
+		// }
 		// fmt.Println(targets)
 
 		//MAIN LOGIC
@@ -65,17 +78,6 @@ to quickly create a Cobra application.`,
 		fmt.Println("")
 		wg.Wait()
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(postgresCmd)
-
-	postgresCmd.Flags().IntP("threads", "t", 100, "threads")
-	postgresCmd.Flags().StringP("port", "", "", "port")
-	postgresCmd.Flags().StringP("user", "u", "", "user")
-	postgresCmd.Flags().StringP("password", "p", "", "password")
-	postgresCmd.Flags().StringP("inputlist", "i", "", "inputlist")
-	postgresCmd.Flags().StringP("module", "M", "", "Choose one of module")
 }
 
 func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
