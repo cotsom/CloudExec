@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"os"
 	"regexp"
+	"strconv"
 )
 
 var domainRegex = regexp.MustCompile(`^([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$`)
@@ -72,4 +73,13 @@ func ParseTargetsFromList(inputFile string) []string {
 	}
 
 	return lines
+}
+
+func GetTimeout(flags map[string]string) int {
+	if timeoutStr, exists := flags["timeout"]; exists && timeoutStr != "" {
+		if timeout, err := strconv.Atoi(timeoutStr); err == nil {
+			return timeout
+		}
+	}
+	return 10
 }

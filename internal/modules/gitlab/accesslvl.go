@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
+
+	utils "github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Accesslvl struct {
@@ -50,13 +51,21 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 		port = flags["port"]
 	}
 
-	username := getUsername(target, flags, scheme, port)
-	err := json.Unmarshal(username, &user)
+	username, err := getUsername(target, flags, scheme, port)
+	if err != nil {
+		fmt.Println("Error getting user:", err)
+	}
+
+	err = json.Unmarshal(username, &user)
 	if err != nil {
 		fmt.Println("Error unmarshalling JSON:", err)
 	}
 
-	body := getProjects(target, flags, scheme, port)
+	body, err := getProjects(target, flags, scheme, port)
+	if err != nil {
+		fmt.Println("Error getting projects:", err)
+	}
+
 	err = json.Unmarshal(body, &projects)
 	if err != nil {
 		fmt.Println("Can't read projects", string(body))
@@ -74,7 +83,10 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 			fmt.Println("Can't get group access")
 		}
 
-		body = checkPermissions(target, flags, scheme, port, project.Id)
+		body, err = checkPermissions(target, flags, scheme, port, project.Id)
+		if err != nil {
+			fmt.Println("Error getting permissions:", err)
+		}
 
 		err := json.Unmarshal(body, &access_levels)
 		if err != nil {
@@ -94,100 +106,42 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 	}
 }
 
-func getUsername(target string, flags map[string]string, scheme string, port string) []byte {
-	route := "api/v4/user"
-
-	if flags["timeout"] == "" {
-		flags["timeout"] = "10"
-	}
-	timeout, _ := strconv.Atoi(flags["timeout"])
+func makeRequest(url, token string, timeout int) ([]byte, error) {
 	client := http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	url := fmt.Sprintf("%s://%s:%s/%s", scheme, target, port, route)
-
 	request, err := http.NewRequest("GET", url, nil)
-	request.Header.Set("PRIVATE-TOKEN", flags["token"])
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	request.Header.Set("PRIVATE-TOKEN", token)
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	response, err := client.Do(request)
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	return body
+	return body, nil
 }
 
-func getProjects(target string, flags map[string]string, scheme string, port string) []byte {
-	route := "api/v4/projects?membership=true&per_page=99999"
-
-	if flags["timeout"] == "" {
-		flags["timeout"] = "10"
-	}
-	timeout, _ := strconv.Atoi(flags["timeout"])
-	client := http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
-	}
-
-	url := fmt.Sprintf("%s://%s:%s/%s", scheme, target, port, route)
-
-	request, err := http.NewRequest("GET", url, nil)
-	request.Header.Set("PRIVATE-TOKEN", flags["token"])
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return body
+func getUsername(target string, flags map[string]string, scheme, port string) ([]byte, error) {
+	url := fmt.Sprintf("%s://%s:%s/api/v4/user", scheme, target, port)
+	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
 
-func checkPermissions(target string, flags map[string]string, scheme string, port string, projectId int) []byte {
+func getProjects(target string, flags map[string]string, scheme, port string) ([]byte, error) {
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?membership=true&per_page=99999", scheme, target, port)
+	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
+}
+
+func checkPermissions(target string, flags map[string]string, scheme, port string, projectId int) ([]byte, error) {
 	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d/members/all", scheme, target, port, projectId)
-
-	if flags["timeout"] == "" {
-		flags["timeout"] = "10"
-	}
-	timeout, _ := strconv.Atoi(flags["timeout"])
-	client := http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
-	}
-
-	request, err := http.NewRequest("GET", url, nil)
-	request.Header.Set("PRIVATE-TOKEN", flags["token"])
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-	// fmt.Println(string(body))
-	return body
+	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }

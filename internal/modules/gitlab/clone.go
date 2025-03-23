@@ -17,8 +17,12 @@ func (m Clone) RunModule(target string, flags map[string]string, scheme string) 
 		port = flags["port"]
 	}
 
-	body := getProjects(target, flags, scheme, port)
-	err := json.Unmarshal(body, &projects)
+	body, err := getProjects(target, flags, scheme, port)
+	if err != nil {
+		fmt.Println("Error getting projects:", err)
+	}
+
+	err = json.Unmarshal(body, &projects)
 	if err != nil {
 		fmt.Println("Error unmarshalling JSON:", err)
 	}
