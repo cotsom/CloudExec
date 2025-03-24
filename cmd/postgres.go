@@ -87,9 +87,8 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		flags["port"] = "5432"
 	}
 
-	// if flags["user"] != "" && flags["passwords"] != ""{}
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", flags["user"], flags["password"], target, flags["port"], flags["database"])
-	fmt.Println(dbURL)
+	// fmt.Println(dbURL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -100,6 +99,19 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		if (strings.Contains(err.Error(), "password authentication")) || (strings.Contains(err.Error(), "no PostgreSQL user name specified")) {
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, flags["port"]))
 		}
+		os.Exit(0)
 	}
+
 	defer conn.Close(context.Background())
+	var isSuperuser bool
+	err = conn.QueryRow(context.Background(), "SELECT rolsuper FROM pg_roles WHERE rolname = current_user").Scan(&isSuperuser)
+	if err != nil {
+		fmt.Println("Query failed: ", err)
+	}
+
+	if isSuperuser {
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres %sPwned!%s", utils.ClearLine, target, flags["port"], utils.ColorYellow, utils.ColorReset))
+	} else {
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Postgres\n", utils.ClearLine, target, flags["port"]))
+	}
 }
