@@ -44,18 +44,11 @@ to quickly create a Cobra application.`,
 			flags[f.Name] = f.Value.String()
 		})
 
-		if (len(args) < 1) && (flags["inputlist"] != "") {
-			fmt.Println("Enter host / subnetwork / input list")
+		targets, err := utils.GetTargets(flags, args)
+		if err != nil {
+			utils.Colorize(utils.ColorRed, err.Error())
 			return
 		}
-
-		var targets []string
-		if flags["inputlist"] != "" {
-			targets = utils.ParseTargetsFromList(flags["inputlist"])
-		} else {
-			targets = utils.ParseTargets(args[0])
-		}
-		// fmt.Println(targets)
 
 		//MAIN LOGIC
 		var wg sync.WaitGroup

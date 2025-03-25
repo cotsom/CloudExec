@@ -65,6 +65,9 @@ func Colorize(color Color, message string) {
 
 func HttpRequest(targetUrl string, method string, data []byte, client http.Client) (*http.Response, error) {
 	request, err := http.NewRequest(method, targetUrl, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	response, err := client.Do(request)

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net/netip"
@@ -84,12 +85,17 @@ func GetTimeout(flags map[string]string) int {
 	return 10
 }
 
-func GetTargets(flags map[string]string, args []string) []string {
+func GetTargets(flags map[string]string, args []string) ([]string, error) {
 	var targets []string
+
+	if (len(args) < 1) && (flags["inputlist"] == "") {
+		return nil, errors.New("enter host / subnetwork / input list")
+	}
+
 	if flags["inputlist"] != "" {
 		targets = ParseTargetsFromList(flags["inputlist"])
 	} else {
 		targets = ParseTargets(args[0])
 	}
-	return targets
+	return targets, nil
 }
