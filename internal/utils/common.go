@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/rand"
 )
 
 func GetParam(args []string, moduleSymbol string) (string, error) {
@@ -80,4 +82,13 @@ func ProgressBar(allItems int, currentItem int, progress *int) {
 	// *progress = percent
 
 	fmt.Printf("\r[%s] %d", strings.Repeat("-", percent), percent)
+}
+
+func RandStringRunes(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
