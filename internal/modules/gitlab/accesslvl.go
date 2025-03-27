@@ -38,13 +38,14 @@ type GroupAccess struct {
 }
 
 type User struct {
+	Id       int    `json:"id"`
 	Username string `json:"name"`
 }
 
 func (m Accesslvl) RunModule(target string, flags map[string]string, scheme string) {
 	var projects []Project
 	var user User
-	var access_levels []Accesslvl
+	var access_level Accesslvl
 
 	port := "80"
 	if flags["port"] != "" {
@@ -72,9 +73,9 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 	}
 
 	for _, project := range projects {
-		fmt.Println("=====================", project.Name, "=====================")
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("===========%s==========", project.Name))
 		if project.Permissions.GroupAccess != nil {
-			fmt.Printf("Group Access Level: %d\n\n", project.Permissions.GroupAccess.AccessLevel)
+			utils.Colorize(utils.ColorYellow, fmt.Sprintf("Group Access Level: %d\n\n", project.Permissions.GroupAccess.AccessLevel))
 		} else if project.SharedWithGroups != nil {
 			for _, group := range project.SharedWithGroups {
 				fmt.Printf("Group Access Level: %d\n\n", group.GroupAccessLevel)
@@ -83,25 +84,18 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 			fmt.Println("Can't get group access")
 		}
 
-		body, err = checkPermissions(target, flags, scheme, port, project.Id)
+		body, err = checkPermissions(target, flags, scheme, port, project.Id, user.Id)
 		if err != nil {
 			fmt.Println("Error getting permissions:", err)
 		}
 
-		err := json.Unmarshal(body, &access_levels)
+		err := json.Unmarshal(body, &access_level)
 		if err != nil {
 			fmt.Println("Error unmarshalling JSON:", err)
 		}
 
-		if project.Permissions.ProjectAccess != nil {
-			for _, access_level := range access_levels {
-				if access_level.Username == user.Username {
-					fmt.Println("YOUR OWN ACCESS LEVEL FOR PROJECT:", project.Name)
-					fmt.Println(access_level.Accesslvl)
-					fmt.Println(access_level.Username)
-				}
-			}
-		}
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("User %s ACCESS LEVEL FOR PROJECT: %s", access_level.Username, project.Name))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%d", access_level.Accesslvl))
 
 	}
 }
@@ -141,7 +135,7 @@ func getProjects(target string, flags map[string]string, scheme, port string) ([
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
 
-func checkPermissions(target string, flags map[string]string, scheme, port string, projectId int) ([]byte, error) {
-	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d/members/all", scheme, target, port, projectId)
+func checkPermissions(target string, flags map[string]string, scheme, port string, projectId int, userId int) ([]byte, error) {
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d/members/all/%d", scheme, target, port, projectId, userId)
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
