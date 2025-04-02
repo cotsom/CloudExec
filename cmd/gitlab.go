@@ -34,26 +34,25 @@ var gitlabdModules = map[string]GitlabModule{
 func init() {
 	rootCmd.AddCommand(gitlabCmd)
 
-	gitlabCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	gitlabCmd.Flags().StringP("port", "", "", "port lol")
-	gitlabCmd.Flags().StringP("user", "u", "", "user lol")
-	gitlabCmd.Flags().StringP("password", "p", "", "password lol")
-	gitlabCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	gitlabCmd.Flags().StringP("module", "M", "", "Choose one of module")
-	gitlabCmd.Flags().StringP("token", "", "", "set token")
+	gitlabCmd.Flags().IntP("threads", "t", 100, "Number of threads for scan")
+	gitlabCmd.Flags().StringP("port", "", "", "Gitlab port")
+	gitlabCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	gitlabCmd.Flags().StringP("module", "M", "", "Choose module")
+	gitlabCmd.Flags().StringP("token", "", "", "Set auth token")
 	gitlabCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 
 // gitlabCmd represents the gitlab command
 var gitlabCmd = &cobra.Command{
-	Use:   "gitlab",
+	Use:   "gitlab host/subnetwork/input-list",
 	Short: "discover & exploit Gitlab",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Mode for discover & exploit Gitlab
+Will scan and highlight all found hosts with gitlab service.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+* loginbypass - try endpoints to bypass the login page and get public projects
+* accesslvl - check personal and group access token rights of all available projects 
+* clone - clone all available repositories`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {

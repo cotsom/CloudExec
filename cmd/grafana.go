@@ -28,7 +28,7 @@ func init() {
 	grafanaCmd.Flags().StringP("user", "u", "", "Username for grafana")
 	grafanaCmd.Flags().StringP("password", "p", "", "Password for grafana")
 	grafanaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
-	grafanaCmd.Flags().StringP("module", "M", "", "Choose grafana module")
+	grafanaCmd.Flags().StringP("module", "M", "", "Choose module")
 }
 
 type GrafanaModule interface {
@@ -50,7 +50,7 @@ Will scan and highlight all found hosts with grafana service.
 
 Modules:
 * datasources - displays a list of all available sources for the specified account
-* defcreds - try to authenticate with popular creds `,
+* defcreds - try to authenticate with popular creds`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
