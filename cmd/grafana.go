@@ -43,14 +43,14 @@ var grafanadModules = map[string]GrafanaModule{
 
 // grafanaCmd represents the grafana command
 var grafanaCmd = &cobra.Command{
-	Use:   "grafana",
+	Use:   "grafana host/subnetwork/input-list",
 	Short: "discover & exploit Grafana",
 	Long: `Mode for discover & exploit Grafana
 Will scan and highlight all found hosts with grafana service.
 
 Modules:
 * datasources - displays a list of all available sources for the specified account
-* defcreds - will try to authenticate with popular creds `,
+* defcreds - try to authenticate with popular creds `,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
