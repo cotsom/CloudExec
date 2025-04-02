@@ -20,6 +20,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func init() {
+	rootCmd.AddCommand(grafanaCmd)
+
+	grafanaCmd.Flags().IntP("threads", "t", 100, "Number of threads for scan")
+	grafanaCmd.Flags().StringP("port", "", "", "Grafana port")
+	grafanaCmd.Flags().StringP("user", "u", "", "Username for grafana")
+	grafanaCmd.Flags().StringP("password", "p", "", "Password for grafana")
+	grafanaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	grafanaCmd.Flags().StringP("module", "M", "", "Choose grafana module")
+}
+
 type GrafanaModule interface {
 	RunModule(target string, flags map[string]string)
 }
@@ -34,12 +45,12 @@ var grafanadModules = map[string]GrafanaModule{
 var grafanaCmd = &cobra.Command{
 	Use:   "grafana",
 	Short: "discover & exploit Grafana",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Mode for discover & exploit Grafana
+Will scan and highlight all found hosts with grafana service.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+* datasources - displays a list of all available sources for the specified account
+* defcreds - will try to authenticate with popular creds `,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -75,37 +86,6 @@ to quickly create a Cobra application.`,
 		fmt.Println("")
 		wg.Wait()
 	},
-}
-
-// var (
-// 	// Used for flags.
-// 	threads   int
-// 	port      string
-// 	user      string
-// 	password  string
-// 	inputlist string
-// 	module    string
-// )
-
-func init() {
-	rootCmd.AddCommand(grafanaCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// grafanaCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// grafanaCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	grafanaCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	grafanaCmd.Flags().StringP("port", "", "", "port lol")
-	grafanaCmd.Flags().StringP("user", "u", "", "user lol")
-	grafanaCmd.Flags().StringP("password", "p", "", "password lol")
-	grafanaCmd.Flags().StringP("inputlist", "i", "", "inputlist")
-	grafanaCmd.Flags().StringP("module", "M", "", "Choose one of module")
 }
 
 func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
