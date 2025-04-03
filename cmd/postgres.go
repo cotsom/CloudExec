@@ -96,8 +96,12 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 
 	conn, err := pgx.Connect(ctx, dbURL)
 	if err != nil {
-		// fmt.Println(err)
-		if (strings.Contains(err.Error(), "auth")) || (strings.Contains(err.Error(), "no PostgreSQL user name specified")) {
+		fmt.Println(err)
+		// if (strings.Contains(err.Error(), "auth")) || (strings.Contains(err.Error(), "no PostgreSQL user name specified")) {
+		// 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, port))
+		// }
+
+		if !strings.Contains(err.Error(), "connection refused") {
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, port))
 		}
 		return
