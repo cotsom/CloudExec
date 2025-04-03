@@ -25,8 +25,8 @@ func init() {
 
 	grafanaCmd.Flags().IntP("threads", "t", 100, "Number of threads for scan")
 	grafanaCmd.Flags().StringP("port", "", "", "Grafana port")
-	grafanaCmd.Flags().StringP("user", "u", "", "Username for grafana")
-	grafanaCmd.Flags().StringP("password", "p", "", "Password for grafana")
+	grafanaCmd.Flags().StringP("user", "u", "", "Grafana user")
+	grafanaCmd.Flags().StringP("password", "p", "", "Grafana password")
 	grafanaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
 	grafanaCmd.Flags().StringP("module", "M", "", "Choose module")
 }

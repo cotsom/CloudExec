@@ -19,6 +19,19 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func init() {
+	rootCmd.AddCommand(kafkaCmd)
+
+	kafkaCmd.Flags().IntP("threads", "t", 100, "Number of threads for scan")
+	kafkaCmd.Flags().StringP("port", "", "", "Kafka port")
+	kafkaCmd.Flags().StringP("user", "u", "", "Kafka user")
+	kafkaCmd.Flags().StringP("password", "p", "", "Kafka password")
+	kafkaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	kafkaCmd.Flags().StringP("module", "M", "", "Choose module")
+	kafkaCmd.Flags().StringP("mechanism", "", "", "Kafka authentication mechanism (SASL_PLAINTEXT is available, default is PLAINTEXT)")
+	kafkaCmd.Flags().StringP("topic", "", "", "Choose topic to read")
+}
+
 type KafkaModule interface {
 	RunModule(target string, flags map[string]string, conn *kafka.Conn, dialer *kafka.Dialer)
 }
@@ -30,14 +43,13 @@ var kafkaModules = map[string]KafkaModule{
 
 // kafkaCmd represents the kafka command
 var kafkaCmd = &cobra.Command{
-	Use:   "kafka",
+	Use:   "kafka host/subnetwork/input-list",
 	Short: "discover & exploit Kafka",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Mode for discover & exploit Kafka
+Will scan and highlight all found hosts with kafka.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+* topics - if the topic flag is set, then the module will read the contents of the selected topic, otherwise it will display all available topics in the broker.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -78,19 +90,6 @@ to quickly create a Cobra application.`,
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(kafkaCmd)
-
-	kafkaCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	kafkaCmd.Flags().StringP("port", "", "", "port lol")
-	kafkaCmd.Flags().StringP("user", "u", "", "user lol")
-	kafkaCmd.Flags().StringP("password", "p", "", "password lol")
-	kafkaCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	kafkaCmd.Flags().StringP("module", "M", "", "Choose one of module")
-	kafkaCmd.Flags().StringP("mechanism", "", "", "Choose mechanism")
-	kafkaCmd.Flags().StringP("topic", "", "", "Choose topic to read")
-}
-
 func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
 	defer func() {
 		<-sem
@@ -121,7 +120,7 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 
 		conn, err = dialer.Dial("tcp", broker)
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Kafka (%s:%s)\n", utils.ClearLine, target, flags["port"], flags["user"], flags["password"]))
 			return
 		}
