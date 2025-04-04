@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +26,8 @@ func init() {
 	zkCmd.Flags().StringP("password", "p", "", "password")
 	zkCmd.Flags().StringP("inputlist", "i", "", "inputlist")
 	zkCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	zkCmd.Flags().StringP("list", "", "", "List znodes")
+	zkCmd.Flags().StringP("get", "", "", "Get znode")
 }
 
 // zkCmd represents the zk command
@@ -86,13 +89,33 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 
 	c, _, err := zk.Connect([]string{fmt.Sprintf("%s:%s", target, port)}, time.Second) //*10)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		if !strings.Contains(err.Error(), "connection refused") {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
+		}
+		return
 	}
-	children, stat, ch, err := c.ChildrenW("/")
-	if err != nil {
-		panic(err)
+	utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
+
+	// switch znodeAction := flags
+
+	if flags["list"] != "" {
+		children, _, _, err := c.ChildrenW(flags["list"])
+		if err != nil {
+			utils.Colorize(utils.ColorRed, err.Error())
+		}
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("%+v", children))
+		if len(children) == 0 {
+			utils.Colorize(utils.ColorYellow, "Try to use --get flag")
+		}
 	}
-	fmt.Printf("%+v %+v\n", children, stat)
-	e := <-ch
-	fmt.Printf("%+v\n", e)
+
+	if flags["get"] != "" {
+		out, _, _ := c.Get(flags["get"])
+		utils.Colorize(utils.ColorYellow, string(out))
+		if string(out) == "" {
+			utils.Colorize(utils.ColorYellow, "Try to use --list flag")
+		}
+	}
+
 }
