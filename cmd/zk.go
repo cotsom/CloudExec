@@ -97,6 +97,7 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 	}
 
 	err = c.AddAuth("digest", []byte(fmt.Sprintf("%s:%s", flags["user"], flags["password"])))
+	fmt.Println(err)
 	if err != nil {
 		fmt.Println(err)
 		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
@@ -119,7 +120,10 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 	}
 
 	if flags["get"] != "" {
-		out, _, _ := c.Get(flags["get"])
+		out, _, err := c.Get(flags["get"])
+		if err != nil {
+			utils.Colorize(utils.ColorRed, err.Error())
+		}
 		utils.Colorize(utils.ColorYellow, string(out))
 		if string(out) == "" {
 			utils.Colorize(utils.ColorYellow, "Try to use --list flag")
