@@ -21,9 +21,9 @@ func init() {
 	rootCmd.AddCommand(zkCmd)
 
 	zkCmd.Flags().IntP("threads", "t", 100, "threads")
-	zkCmd.Flags().StringP("port", "", "", "port")
-	zkCmd.Flags().StringP("user", "u", "", "user")
-	zkCmd.Flags().StringP("password", "p", "", "password")
+	zkCmd.Flags().StringP("port", "", "", "Zookeeper port")
+	zkCmd.Flags().StringP("user", "u", "", "Zookeeper user")
+	zkCmd.Flags().StringP("password", "p", "", "Zookeeper password")
 	zkCmd.Flags().StringP("inputlist", "i", "", "inputlist")
 	zkCmd.Flags().StringP("module", "M", "", "Choose one of module")
 	zkCmd.Flags().StringP("list", "", "", "List znodes")
@@ -95,6 +95,14 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 		}
 		return
 	}
+
+	err = c.AddAuth("digest", []byte(fmt.Sprintf("%s:%s", flags["user"], flags["password"])))
+	if err != nil {
+		fmt.Println(err)
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
+		return
+	}
+
 	utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
 
 	// switch znodeAction := flags
