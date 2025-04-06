@@ -104,7 +104,7 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 		return
 	}
 
-	utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
+	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[+] %s:%s - Zookeeper\n", utils.ClearLine, target, port))
 
 	// switch znodeAction := flags
 
