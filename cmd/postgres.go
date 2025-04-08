@@ -101,7 +101,7 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		// 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, port))
 		// }
 
-		if !strings.Contains(err.Error(), "connection refused") {
+		if !strings.Contains(err.Error(), "connection refused") && !strings.Contains(err.Error(), "timeout: context deadline exceeded") {
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Postgres\n", utils.ClearLine, target, port))
 		}
 		return
