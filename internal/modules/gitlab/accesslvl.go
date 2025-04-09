@@ -135,6 +135,11 @@ func getProjects(target string, flags map[string]string, scheme, port string) ([
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
 
+func getPublicProjects(target string, flags map[string]string, scheme, port string) ([]byte, error) {
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?per_page=99999", scheme, target, port)
+	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
+}
+
 func checkPermissions(target string, flags map[string]string, scheme, port string, projectId int, userId int) ([]byte, error) {
 	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d/members/all/%d", scheme, target, port, projectId, userId)
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))

@@ -17,6 +17,30 @@ func (m Clone) RunModule(target string, flags map[string]string, scheme string) 
 		port = flags["port"]
 	}
 
+	if flags["public"] == "true" {
+		fmt.Println(flags["public"])
+		body, err := getPublicProjects(target, flags, scheme, port)
+		if err != nil {
+			fmt.Println("Error getting projects:", err)
+		}
+
+		err = json.Unmarshal(body, &projects)
+		if err != nil {
+			fmt.Println("Error unmarshalling JSON:", err)
+		}
+
+		for _, project := range projects {
+			cmd := exec.Command("git", "clone", project.Url)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println("Error:", err)
+				fmt.Println("Output:", string(output))
+				return
+			}
+			fmt.Println(project.Name, string(output))
+		}
+	}
+
 	body, err := getProjects(target, flags, scheme, port)
 	if err != nil {
 		fmt.Println("Error getting projects:", err)

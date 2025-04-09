@@ -40,6 +40,7 @@ func init() {
 	gitlabCmd.Flags().StringP("module", "M", "", "Choose module")
 	gitlabCmd.Flags().StringP("token", "", "", "Set auth token")
 	gitlabCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
+	gitlabCmd.Flags().BoolP("public", "", false, "Use public access")
 }
 
 // gitlabCmd represents the gitlab command
@@ -56,7 +57,13 @@ Modules:
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
-			flags[f.Name] = f.Value.String()
+			if f.Value.Type() == "bool" {
+				if f.Changed {
+					flags[f.Name] = f.Value.String()
+				}
+			} else {
+				flags[f.Name] = f.Value.String()
+			}
 		})
 
 		targets, err := utils.GetTargets(flags, args)
