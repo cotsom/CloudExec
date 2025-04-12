@@ -23,12 +23,11 @@ import (
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "discover & exploit Kubernetes",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Mode for discover & exploit Kubernetes
+Will scan and highlight all found hosts with kubernetes & kubelets.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -68,19 +67,15 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(kubeCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// kubeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// kubeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	kubeCmd.Flags().IntP("threads", "t", 100, "threads")
+	kubeCmd.Flags().StringP("port", "", "", "kubernetes port")
+	kubeCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	kubeCmd.Flags().StringP("module", "M", "", "Choose module")
+	kubeCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 
 func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
-	fmt.Println(target)
+	// fmt.Println(target)
 	defer func() {
 		<-sem
 		wg.Done()

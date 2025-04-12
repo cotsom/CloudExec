@@ -34,12 +34,12 @@ var registeredModules = map[string]Module{
 var registryCmd = &cobra.Command{
 	Use:   "registry",
 	Short: "discover & exploit container registry",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Mode for discover & exploit Kafka
+Will scan and highlight all found hosts with kafka.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+* images - Get all images from docker registry
+* harbor - Get all artifacts from Harbor registry (containers build history, helm charts values.yml)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -83,12 +83,12 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(registryCmd)
 
-	registryCmd.Flags().IntP("threads", "t", 100, "threads lol")
-	registryCmd.Flags().StringP("port", "", "", "port lol")
-	registryCmd.Flags().StringP("user", "u", "", "user lol")
-	registryCmd.Flags().StringP("password", "p", "", "password lol")
-	registryCmd.Flags().StringP("inputlist", "i", "", "password inputlist")
-	registryCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	registryCmd.Flags().IntP("threads", "t", 100, "threads")
+	registryCmd.Flags().StringP("port", "", "", "registry port")
+	registryCmd.Flags().StringP("user", "u", "", "registry user")
+	registryCmd.Flags().StringP("password", "p", "", "registry password")
+	registryCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	registryCmd.Flags().StringP("module", "M", "", "Choose module")
 	registryCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 

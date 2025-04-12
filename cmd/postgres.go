@@ -22,25 +22,24 @@ func init() {
 	rootCmd.AddCommand(postgresCmd)
 
 	postgresCmd.Flags().IntP("threads", "t", 100, "threads")
-	postgresCmd.Flags().StringP("port", "", "", "port")
-	postgresCmd.Flags().StringP("user", "u", "", "user")
-	postgresCmd.Flags().StringP("password", "p", "", "password")
-	postgresCmd.Flags().StringP("inputlist", "i", "", "inputlist")
-	postgresCmd.Flags().StringP("module", "M", "", "Choose one of module")
+	postgresCmd.Flags().StringP("port", "", "", "postgres port")
+	postgresCmd.Flags().StringP("user", "u", "", "postgres user")
+	postgresCmd.Flags().StringP("password", "p", "", "postgres password")
+	postgresCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	postgresCmd.Flags().StringP("module", "M", "", "Choose module")
 	postgresCmd.Flags().StringP("database", "d", "postgres", "select a database to connect to")
 	postgresCmd.Flags().StringP("exec", "x", "", "execute a command if user is superuser")
 }
 
 // postgresCmd represents the postgres command
 var postgresCmd = &cobra.Command{
-	Use:   "postgres",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "postgres host/subnetwork/input-list",
+	Short: "discover & exploit Postgres",
+	Long: `Mode for discover & exploit Postgres
+Will scan and highlight all found hosts with Postgres.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+-`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
