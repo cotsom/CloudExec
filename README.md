@@ -10,12 +10,6 @@ Here are mods for scan some services
 - Registry
 - Kube
 
-### Legend
-Blue highlighting - Target found `[*] 192.168.1.1 - Service`
-
-Green highlighting - Target found and access granted  `[+] 192.168.1.1 - Service`
-
-Yellow highlighted `Pwned` - You can execute code (RCE)
 
 # Usage: 
 ```shell
@@ -28,6 +22,13 @@ clx ModeName -i hosts.txt
 #Using module on all found hosts
 clx ModeName <ip/network/hostname> -M moduleName
 ```
+
+### Legend
+Blue highlighting - Target found `[*] 192.168.1.1 - Service`
+
+Green highlighting - Target found and access granted  `[+] 192.168.1.1 - Service`
+
+Yellow highlighted `Pwned` - You can execute code (RCE)
 
 # Grafana
 This mode  is designed to discover & exploit Grafana. It will scan and highlight all found hosts with grafana service
