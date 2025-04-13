@@ -12,7 +12,9 @@ Here are mods for scan some services
 
 ### Legend
 Blue highlighting - Target found `[*] 192.168.1.1 - Service`
+
 Green highlighting - Target found and access granted  `[+] 192.168.1.1 - Service`
+
 Yellow highlighted `Pwned` - You can execute code (RCE)
 
 
