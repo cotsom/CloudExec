@@ -127,7 +127,7 @@ func checkKube(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[s
 		if strings.Contains(string(respBody), "Unauthorized") {
 			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kubelet", target))
 		} else {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - kubelet UNAUTH!", target))
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - kubelet UNAUTH!", target))
 		}
 	}
 }
