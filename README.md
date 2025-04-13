@@ -24,11 +24,10 @@ This mode  is designed to discover & exploit Grafana. It will scan and highlight
 
 Usage: `clx grafana <ip/network/hostname>`
 
-Modules:
-
-modules usage: `clx grafana <ip/network/hostname> -M moduleName`
+**Modules**:
 * **datasources** - Displays a list of all available sources for the specified account. By querying the data sources, you can retrieve the data stored in them (require `-u` and `-p` flags for authenticate)
 * **defcreds** - Try to authenticate with popular creds
+modules usage: `clx grafana <ip/network/hostname> -M moduleName`
 
 # Install
 Go 1.23+
