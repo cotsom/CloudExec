@@ -10,7 +10,7 @@ Here are mods for scan some services
 - Registry
 - Kube
 
-###Legend
+#### Legend
 Blue highlighting - Target found `[*] 192.168.1.1 - Service`
 Green highlighting - Target found and access granted  `[+] 192.168.1.1 - Service`
 Yellow highlighted `Pwned` - You can execute code (RCE)
@@ -34,7 +34,7 @@ Go 1.23+
 # Writing module
 You can add your own module using e.g. `cobra-cli add <commandName>` command.  This will create a new file in the `cmd/` directory containing the code template for the new command.
 
-####Template for new mode:
+#### Template for new mode:
 *In the Run function you can implement your own logic for receiving and parsing flags, targets and scans*
 ```go
 package cmd
