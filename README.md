@@ -90,7 +90,7 @@ Go 1.23+
 
 `$ go install github.com/cotsom/CloudExec@latest`
 
-# Writing module
+# Module writing
 You can add your own module using e.g. `cobra-cli add <commandName>` command.  This will create a new file in the `cmd/` directory containing the code template for the new command.
 
 #### Template for new mode:
