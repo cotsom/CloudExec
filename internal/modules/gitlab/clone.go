@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/cotsom/CloudExec/internal/utils"
 )
 
 type Clone struct{}
@@ -58,9 +60,8 @@ func (m Clone) RunModule(target string, flags map[string]string, scheme string) 
 		cmd := exec.Command("git", "clone", cloneUrl)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			fmt.Println("Error:", err)
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("Error: %s", err))
 			fmt.Println("Output:", string(output))
-			return
 		}
 		fmt.Println(project.Name, string(output))
 	}
