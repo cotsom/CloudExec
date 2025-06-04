@@ -141,7 +141,7 @@ func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]str
 	defer proxyResp.Body.Close()
 
 	body, _ := io.ReadAll(proxyResp.Body)
-	utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", target, string(body)))
+	utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", ssrfTarget, string(body)))
 
 	deleteDS(flags, target, defport, client, dsID)
 
