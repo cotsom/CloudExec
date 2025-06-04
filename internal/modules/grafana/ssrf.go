@@ -74,7 +74,7 @@ func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]str
 	}()
 
 	client := http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: 3 * time.Second,
 	}
 
 	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, defport)
@@ -153,5 +153,7 @@ func deleteDS(flags map[string]string, target string, port string, client http.C
 		utils.Colorize(utils.ColorRed, fmt.Sprintf("Can't delete datasource%v", err))
 	}
 
-	defer delResp.Body.Close()
+	if delResp != nil {
+		defer delResp.Body.Close()
+	}
 }
