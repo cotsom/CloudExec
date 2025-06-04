@@ -29,6 +29,8 @@ func init() {
 	grafanaCmd.Flags().StringP("password", "p", "", "Grafana password")
 	grafanaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
 	grafanaCmd.Flags().StringP("module", "M", "", "Choose module")
+	grafanaCmd.Flags().StringP("ssrf-target", "", "", "targets for ssrf module")
+	grafanaCmd.Flags().StringP("ssrf-port", "", "", "port for ssrf module")
 }
 
 type GrafanaModule interface {
@@ -38,6 +40,7 @@ type GrafanaModule interface {
 var grafanadModules = map[string]GrafanaModule{
 	"datasource": modules.Datasource{},
 	"defcreds":   modules.Defcreds{},
+	"ssrf":       modules.Ssrf{},
 	// Add another modules here
 }
 
