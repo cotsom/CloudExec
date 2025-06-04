@@ -42,6 +42,11 @@ func (m Ssrf) RunModule(target string, flags map[string]string) {
 		defport = flags["port"]
 	}
 
+	if flags["timeout"] == "" {
+		flags["timeout"] = "3"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
+
 	ssrfTargets := utils.ParseTargets(flags["ssrf-target"])
 
 	//MAIN LOGIC
@@ -60,21 +65,21 @@ func (m Ssrf) RunModule(target string, flags map[string]string) {
 	for i, ssrfTarget := range ssrfTargets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go makeSsrfRequest(&wg, sem, flags, target, defport, ssrfTarget)
+		go makeSsrfRequest(&wg, sem, flags, target, defport, ssrfTarget, timeout)
 		utils.ProgressBar(len(ssrfTargets), i+1, &progress)
 	}
 	fmt.Println("")
 	wg.Wait()
 }
 
-func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]string, target string, defport string, ssrfTarget string) {
+func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]string, target string, defport string, ssrfTarget string, timeout int) {
 	defer func() {
 		<-sem
 		wg.Done()
 	}()
 
 	client := http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, defport)

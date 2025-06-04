@@ -31,6 +31,7 @@ func init() {
 	grafanaCmd.Flags().StringP("module", "M", "", "Choose module")
 	grafanaCmd.Flags().StringP("ssrf-target", "", "", "targets for ssrf module")
 	grafanaCmd.Flags().StringP("ssrf-port", "", "", "port for ssrf module")
+	grafanaCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
 }
 
 type GrafanaModule interface {
