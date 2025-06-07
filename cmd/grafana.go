@@ -104,8 +104,12 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 
 	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
 
+	if flags["timeout"] == "" {
+		flags["timeout"] = "3"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: 1 * time.Duration(timeout),
 	}
 
 	//check grafana port
