@@ -109,7 +109,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 	}
 	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
-		Timeout: 1 * time.Duration(timeout),
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	//check grafana port
