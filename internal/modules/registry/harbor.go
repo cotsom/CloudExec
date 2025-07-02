@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	if flags["timeout"] == "" {
 		flags["timeout"] = "1"
 	}
+	creds := fmt.Sprintf("%s:%s", flags["user"], url.QueryEscape(flags["password"]))
+
 	timeout, _ := strconv.Atoi(flags["timeout"])
 	client := http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
@@ -56,7 +59,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		},
 	}
 
-	url := fmt.Sprintf("%s://%s:%s@%s:%s/", scheme, flags["user"], flags["password"], target, port)
+	url := fmt.Sprintf("%s://%s@%s:%s/", scheme, creds, target, port)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		return
@@ -70,7 +73,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Harbor\n", utils.ClearLine, target, port))
 
 	//Get all images
-	url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/search?q=/", scheme, flags["user"], flags["password"], target, port)
+	url = fmt.Sprintf("%s://%s@%s:%s/api/v2.0/search?q=/", scheme, creds, target, port)
 
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
@@ -98,7 +101,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s (Artifacts: %d, Pulls: %d)\n", target, image.RepositoryName, image.ArtifactCount, image.PullCount))
 		repoNameSplit := strings.SplitN(image.RepositoryName, "/", 2)
 
-		url := fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
+		url := fmt.Sprintf("%s://%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts?with_tag=false&with_scan_overview=true&with_label=true&with_accessory=false&page_size=15&page=1", scheme, creds, target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"))
 
 		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
@@ -126,7 +129,7 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 			} else if artifact.Type == "CHART" {
 				utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - %s HELM CHART\n", target, image.RepositoryName))
 				if artifact.AdditionLinks.ValuesYAML.Href != "" {
-					valuesYAMLURL := fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.ValuesYAML.Href)
+					valuesYAMLURL := fmt.Sprintf("%s://%s@%s:%s/%s", scheme, creds, target, port, artifact.AdditionLinks.ValuesYAML.Href)
 
 					response, err = utils.HttpRequest(valuesYAMLURL, http.MethodGet, []byte(""), client)
 					if err != nil {
@@ -144,10 +147,10 @@ func (m Harbor) RunModule(target string, flags map[string]string, scheme string)
 			} else {
 				//Get all layers in image artifact
 				if artifact.AdditionLinks.BuildHistory.Href != "" {
-					url = fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, flags["user"], flags["password"], target, port, artifact.AdditionLinks.BuildHistory.Href)
+					url = fmt.Sprintf("%s://%s@%s:%s/%s", scheme, creds, target, port, artifact.AdditionLinks.BuildHistory.Href)
 				} else if len(artifact.References) > 0 && artifact.References[0].ChildDigest != "" {
 					childDigest := artifact.References[0].ChildDigest
-					url = fmt.Sprintf("%s://%s:%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts/%s/additions/build_history", scheme, flags["user"], flags["password"], target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"), childDigest)
+					url = fmt.Sprintf("%s://%s@%s:%s/api/v2.0/projects/%s/repositories/%s/artifacts/%s/additions/build_history", scheme, creds, target, port, repoNameSplit[0], strings.ReplaceAll(repoNameSplit[1], "/", "%252F"), childDigest)
 				}
 
 				response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)

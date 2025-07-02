@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -104,7 +105,7 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	}
 
 	regitryRoute := "v2/_catalog"
-	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
+	creds := fmt.Sprintf("%s:%s", flags["user"], url.QueryEscape(flags["password"]))
 
 	if flags["port"] == "" {
 		flags["port"] = "5000"
@@ -131,7 +132,6 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 	if err != nil {
 		fmt.Printf("client: could not read response body: %s\n", err)
 	}
-
 	// Make https req
 	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
 		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)

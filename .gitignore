@@ -1,0 +1,10 @@
+bin/
+.idea/
+cpu.pprof
+.devcontainer/
+*.swp
+.DS_Store
+.env
+.obsidian
+test/
+.vscode
