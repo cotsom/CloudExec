@@ -1,4 +1,5 @@
 # CloudExec - Cloud Execution Tool
+![intro](doc/intro.png)
 This utility is designed to scan, detect, exploit vulnerabilities and services misconfigurations in cloud and dev linux infrastructures. The selected modes were services commonly found in such environments, as well as the search and testing processes I wanted to automate :)
 
 Here are mods for scan some services
@@ -9,6 +10,8 @@ Here are mods for scan some services
 - Zookeeper
 - Kafka
 - Kube
+- Etcd
+- Redis
 
 
 # Usage: 
@@ -84,6 +87,11 @@ This mode  is designed to discover & exploit kafka. It will scan and highlight a
 # Kube
 This mode  is designed to discover & exploit kube. It will scan and highlight all found **kubernetes** and **kubelet** api. If the api is not closed behind authentication, the tool will highlight this
 
+# Etcd
+This mod is designed to discover etcd. It will scan and highlight all found **v2** and **v3** etcd api. If the api is not closed behind authentication, the tool will highlight this. Also `--keycount` flag will calculate count avaible keys in storage. 
+
+# Redis
+This mod is designed to discover redis. It will scan and highlight all found redis ports. If auth is not required -  the tool will highlight this. Also `--keycount` flag will calculate count avaible keys in storage. 
 
 # Install
 Go 1.23+
