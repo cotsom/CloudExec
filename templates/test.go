@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	modules "github.com/cotsom/CloudExec/internal/modules/test"
+	//modules "github.com/cotsom/CloudExec/internal/modules/test"
 	utils "github.com/cotsom/CloudExec/internal/utils"
 
 	"github.com/spf13/cobra"
