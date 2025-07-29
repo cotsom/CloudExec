@@ -28,6 +28,7 @@ var gitlabdModules = map[string]GitlabModule{
 	"loginbypass": modules.Loginbypass{},
 	"accesslvl":   modules.Accesslvl{},
 	"clone":       modules.Clone{},
+	"runnerrce":   modules.RunnerRce{},
 	// Add another modules here
 }
 
@@ -40,7 +41,10 @@ func init() {
 	gitlabCmd.Flags().StringP("module", "M", "", "Choose module")
 	gitlabCmd.Flags().StringP("token", "", "", "Set auth token")
 	gitlabCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
+	gitlabCmd.Flags().StringP("pjid", "", "", "Project id")
 	gitlabCmd.Flags().BoolP("public", "", false, "Use public access")
+	gitlabCmd.Flags().String("revshell", "", "Flag for runnerrce module, provide ip:port")
+	gitlabCmd.Flags().StringP("exec", "x", "", "Command which will executed via script operator in pipeline")
 }
 
 // gitlabCmd represents the gitlab command
@@ -53,7 +57,8 @@ Will scan and highlight all found hosts with gitlab service.
 Modules:
 * loginbypass - try endpoints to bypass the login page and get public projects
 * accesslvl (Require --token flag) - check personal and group access token rights of all available projects
-* clone - clone all available repositories. Add --public flag if u want to clone public repositories`,
+* clone - clone all available repositories. Add --public flag if u want to clone public repositories
+* runnerrce - (Require --token, --revshell or -x, and pjid flags), from accesslvl module u can get id project when u have lvl > 30, for -x flag maybe need more timeout`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {

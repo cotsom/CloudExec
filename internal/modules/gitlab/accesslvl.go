@@ -21,11 +21,12 @@ type SharedWithGroup struct {
 }
 
 type Project struct {
-	Id               int               `json:"id"`
-	Name             string            `json:"name"`
-	Permissions      Permissions       `json:"permissions"`
-	Url              string            `json:"http_url_to_repo"`
-	SharedWithGroups []SharedWithGroup `json:"shared_with_groups"`
+	Id                int               `json:"id"`
+	Name              string            `json:"name"`
+	Permissions       Permissions       `json:"permissions"`
+	Url               string            `json:"http_url_to_repo"`
+	SharedWithGroups  []SharedWithGroup `json:"shared_with_groups"`
+	PathWithNamespace string            `json:"path_with_namespace"`
 }
 
 type Permissions struct {
@@ -94,7 +95,7 @@ func (m Accesslvl) RunModule(target string, flags map[string]string, scheme stri
 			fmt.Println("Error unmarshalling JSON:", err)
 		}
 
-		utils.Colorize(utils.ColorYellow, fmt.Sprintf("User %s ACCESS LEVEL FOR PROJECT: %s", access_level.Username, project.Name))
+		utils.Colorize(utils.ColorYellow, fmt.Sprintf("User %s ACCESS LEVEL FOR PROJECT: %s (ID: %d)", access_level.Username, project.Name, project.Id))
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%d", access_level.Accesslvl))
 
 	}
@@ -142,5 +143,10 @@ func getPublicProjects(target string, flags map[string]string, scheme, port stri
 
 func checkPermissions(target string, flags map[string]string, scheme, port string, projectId int, userId int) ([]byte, error) {
 	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d/members/all/%d", scheme, target, port, projectId, userId)
+	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
+}
+
+func getProjectById(target string, flags map[string]string, scheme, port string, projectId int) ([]byte, error) {
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects/%d", scheme, target, port, projectId)
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }

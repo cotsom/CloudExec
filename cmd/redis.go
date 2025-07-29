@@ -54,7 +54,7 @@ Modules:
 		for i, target := range targets {
 			wg.Add(1)
 			sem <- struct{}{}
-			go checkRedis(target, &wg, sem, flags)
+			go redisMode(target, &wg, sem, flags)
 			utils.ProgressBar(len(targets), i+1, &progress)
 		}
 		fmt.Println("")
@@ -71,10 +71,14 @@ func init() {
 	redisCmd.Flags().StringP("module", "M", "", "Choose module")
 	redisCmd.Flags().StringP("timeout", "", "2", "Count of seconds for waiting http response")
 	redisCmd.Flags().Bool("keycount", false, "Check count keys, maybe need more timeout")
+	redisCmd.Flags().StringP("password", "p", "", "Password or wordlist")
 
 }
 
-func checkRedis(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
+func redisMode(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
+	var iswordlist bool
+	var wordlist []string
+	//var successLogon bool
 	defer func() {
 		<-sem
 		wg.Done()
@@ -89,24 +93,53 @@ func checkRedis(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 		utils.Colorize(utils.ColorRed, "Invalid timeout value")
 		return
 	}
+	if flags["password"] != "" {
+		//try openfile
+		bytes, err := os.ReadFile(flags["password"])
+		if err == nil {
+			iswordlist = true
+			wordlist = strings.Split(string(bytes), "\n")
+		}
 
+	}
+	if !detectRedis(target, port, timeout) {
+		return
+	}
+	if iswordlist {
+		for _, passwd := range wordlist {
+			checkRedis(passwd, timeout, target, port, keycountNeed)
+		}
+		return
+	}
+
+	checkRedis(flags["password"], timeout, target, port, keycountNeed)
+
+}
+
+func checkRedis(password string, timeout int, target string, port string, keycountNeed bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", target, port),
-		Password: "",
+		Password: password,
 		DB:       0,
 	})
 	val, err := rdb.Info(ctx, "keyspace").Result()
 	if err != nil {
-		if err.Error() == "NOAUTH Authentication required." {
-			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Redis", target))
+
+		if strings.Contains(err.Error(), "WRONGPASS") {
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("[-] %s - Redis | Password: %s", target, password))
+			return
 		}
-		return
+
 	}
 	if strings.Contains(val, "# Keyspace") {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Redis", target))
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis", target))
+		if password != "" {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis | Password: %s", target, password))
+
+		} else {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis", target))
+		}
 	}
 	if keycountNeed {
 		var count int32
@@ -120,5 +153,20 @@ func checkRedis(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 		}
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis, %d keys", target, count))
 	}
+}
 
+func detectRedis(target string, port string, timeout int) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", target, port),
+		Password: "",
+		DB:       0,
+	})
+	_, err := rdb.Info(ctx, "keyspace").Result()
+	if strings.Contains(err.Error(), "NOAUTH") {
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Redis", target))
+		return true
+	}
+	return false
 }
