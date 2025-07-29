@@ -62,7 +62,8 @@ This mode  is designed to discover & exploit Gitlab. It will scan and highlight 
 * **loginbypass** - try endpoints to bypass the login page and get public projects
 * **accesslvl** - check personal and group access token's rights of all available projects (Require --token flag)
 * **clone** - clone all available repositories. **Add `--public` flag if u want to clone public repositories**
-
+* **runnerrce** - will be clone repo by `--pjid`, create new branch with evil `gitlab-ci.yaml`, maybe make revshell(`--revshell` flag) or execute command with output (`-x`) 
+ 
 
 # Zookeeper
 This mode  is designed to discover & exploit Zookeeper. It will scan and highlight all found targets.
@@ -91,7 +92,7 @@ This mode  is designed to discover & exploit kube. It will scan and highlight al
 This mod is designed to discover etcd. It will scan and highlight all found **v2** and **v3** etcd api. If the api is not closed behind authentication, the tool will highlight this. Also `--keycount` flag will calculate count avaible keys in storage. 
 
 # Redis
-This mod is designed to discover redis. It will scan and highlight all found redis ports. If auth is not required -  the tool will highlight this. Also `--keycount` flag will calculate count avaible keys in storage. 
+This mod is designed to discover redis. It will scan and highlight all found redis ports. If auth is not required -  the tool will highlight this. Also `--keycount` flag will calculate count avaible keys in storage. Also can brute passwords `-p` flag.
 
 # Install
 Go 1.23+
