@@ -1,6 +1,8 @@
 module github.com/cotsom/CloudExec
 
-go 1.23.4
+go 1.24.0
+
+toolchain go1.24.10
 
 require (
 	github.com/go-git/go-billy/v6 v6.0.0-20250627091229-31e2a16eef30
@@ -56,6 +58,6 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
+	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39
 	golang.org/x/text v0.27.0 // indirect
 )
