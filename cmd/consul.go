@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -122,6 +119,8 @@ func checkConsul(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 
 	isConsul, aclEnabled, rceEnabled, scheme := isConsul(target, flags["port"], client, flags)
 
+	// fmt.Println(isConsul, aclEnabled, rceEnabled, scheme)
+
 	if !isConsul {
 		return
 	}
@@ -151,9 +150,11 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 	consulRoute := "v1/agent/self"
 
 	// Make http req
-	url := fmt.Sprint("http://%s:%s/%s", target, flags["port"], consulRoute)
+	url := fmt.Sprintf("http://%s:%s/%s", target, flags["port"], consulRoute)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+
 	if err != nil {
+		// utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, flags["port"], err))
 		return false, false, false, ""
 	}
 	defer response.Body.Close()
@@ -166,15 +167,17 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 	// Make https req
 	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
 		url = fmt.Sprintf("https://%s:%s/%s", target, flags["port"], consulRoute)
+
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
+			// utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, flags["port"], err))
 			return false, false, false, ""
 		}
 		defer response.Body.Close()
 		respBody, err = ioutil.ReadAll(response.Body)
 
 		if err != nil {
-			// fmt.Printf("client: could not read response body: %s\n", err)
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, flags["port"], err))
 			return false, false, false, ""
 		}
 		scheme = "https"
@@ -183,15 +186,17 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 	switch response.StatusCode {
 	case 200:
 		var config agentSelf
-		if err := json.NewDecoder(response.Body).Decode(&config); err != nil {
-			fmt.Printf("Can't get Datasource creation response: %v\n", err)
+
+		err = json.Unmarshal(respBody, &config)
+		if err != nil {
+			fmt.Println("Error unmarshalling JSON:", err)
 			return true, false, false, scheme
 		}
 
-		aclsCheck := config.DebugConfig.ACLsEnabled
+		aclsCheck := !*config.DebugConfig.ACLsEnabled
 		rceCheck := config.DebugConfig.EnableRemoteScriptChecks
 
-		return true, *aclsCheck, *rceCheck, scheme
+		return true, aclsCheck, *rceCheck, scheme
 
 	case 403:
 		if strings.Contains(string(respBody), "token lacks permission") {

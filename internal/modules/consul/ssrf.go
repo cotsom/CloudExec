@@ -32,7 +32,7 @@ type Ssrf struct {
 	ReadOnly    bool           `json:"readOnly"`
 }
 
-func (m Ssrf) RunModule(target string, flags map[string]string) {
+func (m Ssrf) RunModule(target string, flags map[string]string, scheme string) {
 	if flags["user"] == "" && flags["password"] == "" {
 		return
 	}
