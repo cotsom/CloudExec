@@ -34,10 +34,11 @@ func init() {
 	consulCmd.Flags().StringP("password", "p", "", "Consul password")
 	consulCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
 	consulCmd.Flags().StringP("module", "M", "", "Choose module")
-	consulCmd.Flags().StringP("ssrf-target", "", "", "targets for ssrf module")
+	consulCmd.Flags().StringP("ssrf-target", "", "", "target for SSRF module")
+	consulCmd.Flags().StringP("ssrf-network", "", "", "network for scan in SSRF module (e.g 192.168.1.0/24)")
 	consulCmd.Flags().StringP("ssrf-port", "", "", "port for ssrf module")
 	consulCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
-	consulCmd.Flags().BoolP("ssl", "", false, "Use https")
+	consulCmd.Flags().StringP("exec", "x", "", "execute a command with RCE module")
 }
 
 type ConsulModule interface {
@@ -46,6 +47,7 @@ type ConsulModule interface {
 
 var consulModules = map[string]ConsulModule{
 	"ssrf": modules.Ssrf{},
+	"rce":  modules.Rce{},
 	// Add another modules here
 }
 
@@ -141,6 +143,8 @@ func checkConsul(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", module, consulModules)
 			os.Exit(1)
 		}
+	} else if flags["exec"] != "" {
+		consulModules["rce"].RunModule(target, flags, scheme)
 	}
 
 }

