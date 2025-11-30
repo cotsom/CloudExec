@@ -36,7 +36,7 @@ var postgresCmd = &cobra.Command{
 	Use:   "postgres host/subnetwork/input-list",
 	Short: "discover & exploit Postgres",
 	Long: `Mode for discover & exploit Postgres
-Will scan and highlight all found hosts with Postgres.
+Will scan and highlight all found hosts with Postgres. "Pwned!" suggets rce availabe
 
 Modules:
 -`,

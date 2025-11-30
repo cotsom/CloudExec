@@ -54,13 +54,13 @@ var consulModules = map[string]ConsulModule{
 // consulCmd represents the consul command
 var consulCmd = &cobra.Command{
 	Use:   "consul",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "discover & exploit Consul",
+	Long: `Mode for discover & exploit Consul
+Will scan and highlight all found hosts with consul service. "Pwned!" suggets rce availabe
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Modules:
+* ssrf - send http request to one target or all targets in network on behalf of Consul
+* rce - this module triggers with -x flag. If you see "Pwned!" is suggets that rce availabe and you have availability to execute a command`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//Parse flags
 		flags := make(map[string]string)

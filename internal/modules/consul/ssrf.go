@@ -57,7 +57,7 @@ func (m Ssrf) RunModule(target string, flags map[string]string, scheme string) {
 	if flags["ssrf-network"] != "" {
 		ssrfTargets = utils.ParseTargets(flags["ssrf-network"])
 		for i, currTarget := range ssrfTargets {
-			ssrfTargets[i] = fmt.Sprintf("http://%s", currTarget)
+			ssrfTargets[i] = fmt.Sprintf("http://%s:%s", currTarget, flags["ssrf-port"])
 		}
 	}
 
