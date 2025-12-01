@@ -43,8 +43,7 @@ This mode  is designed to discover & exploit Grafana. It will scan and highlight
 
 **Examples:** 
 ```bash
-clx consul 127.0.0.1 -M ssrf --ssrf-target https://google.com
-clx consul 127.0.0.1 --port 443 --ssrf-network 192.168.1.0/24 --ssrf-port 8080
+clx grafana 127.0.0.1 --port 443 --ssrf-target 192.168.1.0/24 --ssrf-port 8080
 ```
 
 
