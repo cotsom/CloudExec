@@ -51,7 +51,8 @@ Will scan and highlight all found hosts with grafana service.
 
 Modules:
 * datasources - displays a list of all available sources for the specified account
-* defcreds - try to authenticate with popular creds`,
+* defcreds - try to authenticate with popular creds
+* ssrf - send http request to one target or all targets in network on behalf of Grafana`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := make(map[string]string)
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
