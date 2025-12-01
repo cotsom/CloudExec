@@ -193,8 +193,9 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 
 		err = json.Unmarshal(respBody, &config)
 		if err != nil {
-			fmt.Println("Error unmarshalling JSON:", err)
-			return true, false, false, scheme
+			// fmt.Println("Error unmarshalling JSON:", err)
+			return false, false, false, ""
+			// return true, false, false, scheme
 		}
 
 		aclsCheck := !*config.DebugConfig.ACLsEnabled
