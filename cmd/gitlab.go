@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -107,61 +107,64 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 		wg.Done()
 	}()
 
-	scheme := "http"
 	gitlabRoute := "users/sign_in"
 
-	if flags["port"] == "" {
-		flags["port"] = "80"
+	port := flags["port"]
+	if port == "" {
+		port = "80"
 	}
 
 	client := http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: 3 * time.Second,
 	}
 
-	// Make http req
-	url := fmt.Sprintf("http://%s:%s/%s", target, flags["port"], gitlabRoute)
+	// first https, next http
+	schemes := []string{"https", "http"}
 
-	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-	if err != nil {
+	var detectedScheme string
+
+	for _, scheme := range schemes {
+		url := fmt.Sprintf("%s://%s:%s/%s", scheme, target, port, gitlabRoute)
+
+		response, err := utils.HttpRequest(url, http.MethodGet, nil, client)
+		if err != nil {
+			//next scheme
+			continue
+		}
+
+		func() {
+			defer response.Body.Close()
+			respBody, err := io.ReadAll(response.Body)
+			if err != nil {
+				return
+			}
+			if response.StatusCode < 200 || response.StatusCode >= 400 {
+				return
+			}
+			bodyLower := strings.ToLower(string(respBody))
+			if !strings.Contains(bodyLower, "gitlab") {
+				return
+			}
+			detectedScheme = scheme
+		}()
+
+		if detectedScheme != "" {
+			break
+		}
+	}
+
+	if detectedScheme == "" {
 		return
 	}
-	defer response.Body.Close()
-	respBody, err := ioutil.ReadAll(response.Body)
 
-	if err != nil {
-		fmt.Printf("client: could not read response body: %s\n", err)
-	}
-
-	// Make https req
-	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
-		url = fmt.Sprintf("https://%s:%s/%s", target, flags["port"], gitlabRoute)
-		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-		if err != nil {
-			return
-		}
-		defer response.Body.Close()
-		respBody, err = ioutil.ReadAll(response.Body)
-
-		if err != nil {
-			// fmt.Printf("client: could not read response body: %s\n", err)
-			return
-		}
-		scheme = "https"
-	}
-
-	// fmt.Println(string(respBody))
-	if !strings.Contains(string(respBody), "gitlab") {
-		return
-	}
-	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Gitlab\n", utils.ClearLine, target, flags["port"]))
+	utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Gitlab\n", utils.ClearLine, target, port))
 
 	if flags["module"] != "" {
 		if module, exists := gitlabdModules[flags["module"]]; exists {
-			module.RunModule(target, flags, scheme)
+			module.RunModule(target, flags, detectedScheme)
 		} else {
 			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], gitlabdModules)
 			os.Exit(1)
 		}
 	}
-
 }
