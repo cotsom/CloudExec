@@ -66,7 +66,7 @@ func init() {
 	rootCmd.AddCommand(redisCmd)
 
 	redisCmd.Flags().IntP("threads", "t", 100, "threads")
-	redisCmd.Flags().StringP("port", "", "", "etcd port")
+	redisCmd.Flags().StringP("port", "", "", "redis port")
 	redisCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
 	redisCmd.Flags().StringP("module", "M", "", "Choose module")
 	redisCmd.Flags().StringP("timeout", "", "2", "Count of seconds for waiting http response")
@@ -163,10 +163,17 @@ func detectRedis(target string, port string, timeout int) bool {
 		Password: "",
 		DB:       0,
 	})
-	_, err := rdb.Info(ctx, "keyspace").Result()
-	if strings.Contains(err.Error(), "NOAUTH") {
+	res, err := rdb.Info(ctx, "keyspace").Result()
+	if err != nil {
+		if strings.Contains(err.Error(), "NOAUTH") {
+			utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Redis", target))
+			return true
+		}
+	}
+	if strings.Contains(res, "# Keyspace") {
 		utils.Colorize(utils.ColorBlue, fmt.Sprintf("[*] %s - Redis", target))
 		return true
 	}
+
 	return false
 }
