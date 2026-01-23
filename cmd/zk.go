@@ -82,9 +82,10 @@ func checkZookeeper(target string, wg *sync.WaitGroup, sem chan struct{}, flags 
 		wg.Done()
 	}()
 
-	port := flags["port"]
-	if port == "" {
-		port = "2181"
+	port, err := utils.SetPort(flags["port"], "2181")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 
 	c, _, err := zk.Connect([]string{fmt.Sprintf("%s:%s", target, port)}, time.Second) //*10)

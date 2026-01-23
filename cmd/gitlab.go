@@ -109,9 +109,10 @@ func checkGitlab(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 
 	gitlabRoute := "users/sign_in"
 
-	port := flags["port"]
-	if port == "" {
-		port = "80"
+	port, err := utils.SetPort(flags["port"], "80")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 
 	client := http.Client{

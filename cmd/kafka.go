@@ -96,13 +96,14 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 		wg.Done()
 	}()
 
-	if flags["port"] == "" {
-		flags["port"] = "9092"
+	port, err := utils.SetPort(flags["port"], "9092")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
-	broker := fmt.Sprintf("%s:%s", target, flags["port"])
+	broker := fmt.Sprintf("%s:%s", target, port)
 
 	var conn *kafka.Conn
-	var err error
 	var dialer *kafka.Dialer
 
 	switch flags["mechanism"] {
@@ -121,10 +122,10 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 		conn, err = dialer.Dial("tcp", broker)
 		if err != nil {
 			// fmt.Println(err)
-			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Kafka (%s:%s)\n", utils.ClearLine, target, flags["port"], flags["user"], flags["password"]))
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[-] %s:%s - Kafka (%s:%s)\n", utils.ClearLine, target, port, flags["user"], flags["password"]))
 			return
 		}
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Kafka! (%s:%s)\n", utils.ClearLine, target, flags["port"], flags["user"], flags["password"]))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Kafka! (%s:%s)\n", utils.ClearLine, target, port, flags["user"], flags["password"]))
 	default:
 		dialer = &kafka.Dialer{
 			Timeout: 1 * time.Second,
@@ -135,7 +136,7 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 			fmt.Println(err)
 			return
 		}
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Kafka\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Kafka\n", utils.ClearLine, target, port))
 	}
 	defer conn.Close()
 
@@ -144,7 +145,7 @@ func checkKafka(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[
 		if module, exists := kafkaModules[flags["module"]]; exists {
 			module.RunModule(target, flags, conn, dialer)
 		} else {
-			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", flags["module"], kafkaModules)
+			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", port, kafkaModules)
 			os.Exit(1)
 		}
 	}

@@ -85,9 +85,10 @@ func checkEtcd(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[s
 		<-sem
 		wg.Done()
 	}()
-	port := flags["port"]
-	if port == "" {
-		port = "2379"
+	port, err := utils.SetPort(flags["port"], "2379")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 	keycountNeed, _ := strconv.ParseBool(flags["keycount"])
 	timeout, err := strconv.Atoi(flags["timeout"])

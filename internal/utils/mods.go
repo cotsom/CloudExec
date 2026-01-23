@@ -99,3 +99,19 @@ func GetTargets(flags map[string]string, args []string) ([]string, error) {
 	}
 	return targets, nil
 }
+
+func SetPort(flagPort string, defaultPort string) (string, error) {
+	if flagPort == "" {
+		return defaultPort, nil
+	}
+
+	port, err := strconv.Atoi(flagPort)
+	if err != nil {
+		return "", fmt.Errorf("Error parsing port")
+	}
+	if (port > 0) && (port <= 65535) {
+		return flagPort, nil
+	}
+
+	return "", fmt.Errorf("Enter correct port")
+}

@@ -96,8 +96,10 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 		wg.Done()
 	}()
 
-	if flags["port"] == "" {
-		flags["port"] = "3000"
+	port, err := utils.SetPort(flags["port"], "3000")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 
 	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
@@ -111,7 +113,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 	}
 
 	//check grafana port
-	url := fmt.Sprintf("http://%s:%s", target, flags["port"])
+	url := fmt.Sprintf("http://%s:%s", target, port)
 	// fmt.Println(url)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
@@ -129,7 +131,7 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 		return
 	}
 
-	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, flags["port"])
+	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
 	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 	if err != nil {
 		fmt.Println(err)
@@ -138,11 +140,11 @@ func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags ma
 
 	if response.StatusCode == 200 {
 		if flags["user"] == "" && flags["password"] == "" {
-			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana with public dashboards! (%s)\n", utils.ClearLine, target, flags["port"], creds))
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana with public dashboards! (%s)\n", utils.ClearLine, target, port, creds))
 		}
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, flags["port"], creds))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
 	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
 	}
 
 	if flags["module"] != "" {

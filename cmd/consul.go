@@ -107,8 +107,10 @@ func checkConsul(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 		wg.Done()
 	}()
 
-	if flags["port"] == "" {
-		flags["port"] = "8500"
+	port, err := utils.SetPort(flags["port"], "8500")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 	if flags["timeout"] == "" {
 		flags["timeout"] = "3"
@@ -119,7 +121,7 @@ func checkConsul(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	isConsul, aclEnabled, rceEnabled, scheme := isConsul(target, flags["port"], client, flags)
+	isConsul, aclEnabled, rceEnabled, scheme := isConsul(target, port, client, flags)
 
 	// fmt.Println(isConsul, aclEnabled, rceEnabled, scheme)
 
@@ -128,11 +130,11 @@ func checkConsul(target string, wg *sync.WaitGroup, sem chan struct{}, flags map
 	}
 
 	if aclEnabled && rceEnabled {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Consul %sPwned!%s", utils.ClearLine, target, flags["port"], utils.ColorYellow, utils.ColorReset))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Consul %sPwned!%s", utils.ClearLine, target, port, utils.ColorYellow, utils.ColorReset))
 	} else if aclEnabled {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Consul\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Consul\n", utils.ClearLine, target, port))
 	} else {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Consul\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Consul\n", utils.ClearLine, target, port))
 	}
 
 	//Execute defined module
@@ -154,7 +156,7 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 	consulRoute := "v1/agent/self"
 
 	// Make http req
-	url := fmt.Sprintf("http://%s:%s/%s", target, flags["port"], consulRoute)
+	url := fmt.Sprintf("http://%s:%s/%s", target, port, consulRoute)
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 
 	if err != nil {
@@ -170,7 +172,7 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 
 	// Make https req
 	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
-		url = fmt.Sprintf("https://%s:%s/%s", target, flags["port"], consulRoute)
+		url = fmt.Sprintf("https://%s:%s/%s", target, port, consulRoute)
 
 		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
@@ -181,7 +183,7 @@ func isConsul(target string, port string, client http.Client, flags map[string]s
 		respBody, err = ioutil.ReadAll(response.Body)
 
 		if err != nil {
-			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, flags["port"], err))
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("%s[!] %s:%s - %s\n", utils.ClearLine, target, port, err))
 			return false, false, false, ""
 		}
 		scheme = "https"

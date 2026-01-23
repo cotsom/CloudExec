@@ -82,9 +82,10 @@ func checkPostgres(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		wg.Done()
 	}()
 
-	port := flags["port"]
-	if port == "" {
-		port = "5432"
+	port, err := utils.SetPort(flags["port"], "5432")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
 	}
 
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", flags["user"], flags["password"], target, port, flags["database"])
