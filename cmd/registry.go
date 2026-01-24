@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -99,17 +96,19 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		wg.Done()
 	}()
 
+	port, err := utils.SetPort(flags["port"], "5000")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
+	}
+
 	scheme := "http"
-	if flags["port"] == "443" {
+	if port == "443" {
 		scheme = "https"
 	}
 
 	regitryRoute := "v2/_catalog"
 	creds := fmt.Sprintf("%s:%s", flags["user"], url.QueryEscape(flags["password"]))
-
-	if flags["port"] == "" {
-		flags["port"] = "5000"
-	}
 
 	if flags["timeout"] == "" {
 		flags["timeout"] = "1"
@@ -119,44 +118,41 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
+	// Make http req
+	url := fmt.Sprintf("http://%s@%s:%s/%s", creds, target, port, regitryRoute)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-	var respBody []byte
-
-	if err != nil {
-		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
-		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-		if err != nil {
-			return
-		}
-		scheme = "https"
-	}
-
-	defer response.Body.Close()
-	respBody, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return
 	}
+	defer response.Body.Close()
+	respBody, err := ioutil.ReadAll(response.Body)
 
-	if scheme == "http" && strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
-		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
-		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+	}
+	// Make https req
+	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
+		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, port, regitryRoute)
+		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
 			return
 		}
 		defer response.Body.Close()
 		respBody, err = ioutil.ReadAll(response.Body)
+
 		if err != nil {
+			// fmt.Printf("client: could not read response body: %s\n", err)
 			return
 		}
 		scheme = "https"
 	}
 
+	// fmt.Println(string(respBody))
 	if response.StatusCode == 200 {
-		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Registry\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Registry\n", utils.ClearLine, target, port))
 	} else if response.StatusCode != 404 {
-		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Registry\n", utils.ClearLine, target, flags["port"]))
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Registry\n", utils.ClearLine, target, port))
 	}
 
 	if flags["module"] != "" {
