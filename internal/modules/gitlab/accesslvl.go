@@ -140,12 +140,12 @@ func getUsername(target string, flags map[string]string, scheme, port string) ([
 }
 
 func getProjects(target string, flags map[string]string, scheme, port string) ([]byte, error) {
-	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?membership=true&per_page=99999", scheme, target, port)
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?membership=true&per_page=50000", scheme, target, port)
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
 
 func getPublicProjects(target string, flags map[string]string, scheme, port string) ([]byte, error) {
-	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?per_page=99999", scheme, target, port)
+	url := fmt.Sprintf("%s://%s:%s/api/v4/projects?per_page=50000", scheme, target, port)
 	return makeRequest(url, flags["token"], utils.GetTimeout(flags))
 }
 
