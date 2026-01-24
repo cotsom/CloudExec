@@ -119,37 +119,40 @@ func checkRegistry(target string, wg *sync.WaitGroup, sem chan struct{}, flags m
 		Timeout: time.Duration(timeout) * time.Second,
 	}
 
-	// Make http req
 	url := fmt.Sprintf("http://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
 
 	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
-	if err != nil {
-		return
-	}
-	defer response.Body.Close()
-	respBody, err := ioutil.ReadAll(response.Body)
+	var respBody []byte
 
 	if err != nil {
-		fmt.Printf("client: could not read response body: %s\n", err)
-	}
-	// Make https req
-	if strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
 		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
-		response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
 		if err != nil {
-			return
-		}
-		defer response.Body.Close()
-		respBody, err = ioutil.ReadAll(response.Body)
-
-		if err != nil {
-			// fmt.Printf("client: could not read response body: %s\n", err)
 			return
 		}
 		scheme = "https"
 	}
 
-	// fmt.Println(string(respBody))
+	defer response.Body.Close()
+	respBody, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	if scheme == "http" && strings.Contains(string(respBody), "HTTP request was sent to HTTPS port") {
+		url = fmt.Sprintf("https://%s@%s:%s/%s", creds, target, flags["port"], regitryRoute)
+		response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+		if err != nil {
+			return
+		}
+		defer response.Body.Close()
+		respBody, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			return
+		}
+		scheme = "https"
+	}
+
 	if response.StatusCode == 200 {
 		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Registry\n", utils.ClearLine, target, flags["port"]))
 	} else if response.StatusCode != 404 {
