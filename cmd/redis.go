@@ -71,6 +71,7 @@ func init() {
 	redisCmd.Flags().StringP("module", "M", "", "Choose module")
 	redisCmd.Flags().StringP("timeout", "", "2", "Count of seconds for waiting http response")
 	redisCmd.Flags().Bool("keycount", false, "Check count keys, maybe need more timeout")
+	redisCmd.Flags().StringP("username", "u", "", "")
 	redisCmd.Flags().StringP("password", "p", "", "Password or wordlist")
 
 }
@@ -108,20 +109,21 @@ func redisMode(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[s
 	}
 	if iswordlist {
 		for _, passwd := range wordlist {
-			checkRedis(passwd, timeout, target, port, keycountNeed)
+			checkRedis(flags["username"], passwd, timeout, target, port, keycountNeed)
 		}
 		return
 	}
 
-	checkRedis(flags["password"], timeout, target, port, keycountNeed)
+	checkRedis(flags["username"], flags["password"], timeout, target, port, keycountNeed)
 
 }
 
-func checkRedis(password string, timeout int, target string, port string, keycountNeed bool) {
+func checkRedis(username, password string, timeout int, target string, port string, keycountNeed bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", target, port),
+		Username: username,
 		Password: password,
 		DB:       0,
 	})
@@ -129,14 +131,14 @@ func checkRedis(password string, timeout int, target string, port string, keycou
 	if err != nil {
 
 		if strings.Contains(err.Error(), "WRONGPASS") {
-			utils.Colorize(utils.ColorRed, fmt.Sprintf("[-] %s - Redis | Password: %s", target, password))
+			utils.Colorize(utils.ColorRed, fmt.Sprintf("[-] %s - Redis | %s:%s", target, username, password))
 			return
 		}
 
 	}
 	if strings.Contains(val, "# Keyspace") {
 		if password != "" {
-			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis | Password: %s", target, password))
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis | %s:%s", target, username, password))
 
 		} else {
 			utils.Colorize(utils.ColorGreen, fmt.Sprintf("[+] %s - Redis", target))
