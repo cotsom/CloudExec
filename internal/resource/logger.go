@@ -36,3 +36,11 @@ func (l Logger) Fatal(text string) {
 		fmt.Sprintf("[!!!] %s", text),
 	)
 }
+
+func (l Logger) Raw(text string) {
+	fmt.Println(text)
+}
+
+func (l Logger) List(text string) {
+	fmt.Printf("-> %s\n", text)
+}

@@ -7,7 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	modules "github.com/cotsom/CloudExec/internal/modules/clickhouse"
 	"github.com/cotsom/CloudExec/internal/resource"
+	clickResources "github.com/cotsom/CloudExec/internal/resource/clickhouse"
 	"github.com/cotsom/CloudExec/internal/utils/sqlquery"
 
 	"github.com/spf13/cobra"
@@ -15,55 +17,40 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
 
-type ClickhouseOptions struct {
-	resource.Options
+type ClickhouseCmd struct {
+	resource.Command
 
-	// Some default values for clickhouse
-	Username string
-	Password string
-	Database string
-
-	Query string
-
-	Timeout int
+	Opts clickResources.ClickhouseOptions
 }
 
-func NewClickhouseOptions() *ClickhouseOptions {
-	o := &ClickhouseOptions{
+func NewClickhouseCmd(opts clickResources.ClickhouseOptions) *ClickhouseCmd {
+	c := &ClickhouseCmd{
+		Opts: opts,
 		// ...
 	}
 
 	// Sets child `Check` function realization for parent interface
-	o.Options.OptionsIface = o
+	c.Command.CommandIface = c
 
-	return o
+	return c
 }
 
-// type ClickModule interface {
-// 	RunModule(target string, flags map[string]string)
-// }
-
-// var ClickhouseModules = map[string]ClickModule{
-// 	"testModule": modules.Test{},
-// 	// Add another modules here
-// }
-
-func (o *ClickhouseOptions) Check(target string) {
+func (c *ClickhouseCmd) Check(target string) error {
 	dsn := fmt.Sprintf("clickhouse://%s:%s@%s:%d/%s?dial_timeout=%ds&read_timeout=%ds",
-		o.Username,
-		o.Password,
+		c.Opts.Username,
+		c.Opts.Password,
 		target,
-		o.Port,
-		o.Database,
+		c.Opts.Port,
+		c.Opts.Database,
 
-		o.Timeout,
-		o.Timeout,
+		c.Opts.Timeout,
+		c.Opts.Timeout,
 	)
 
 	db, err := sql.Open("clickhouse", dsn)
 	if err != nil {
-		o.Logger.Fatal(err.Error())
-		return
+		c.Logger.Fatal(err.Error())
+		return sqlquery.ConnectionFailure
 	}
 	defer db.Close()
 
@@ -74,58 +61,66 @@ func (o *ClickhouseOptions) Check(target string) {
 	if err != nil {
 		switch err {
 		case sqlquery.ConnectionFailure:
-			// Ignore
+			return err
 		case sqlquery.AuthFailure:
-			if o.Username == "" {
-				o.Logger.Info(fmt.Sprintf("Cickhouse: %s", target))
+			if c.Opts.Username == "" {
+				c.Logger.Info(fmt.Sprintf("Cickhouse: %s", target))
 			} else {
-				o.Logger.Error(fmt.Sprintf("Cickhouse: %s - %s:%s", target, o.Username, o.Password))
+				c.Logger.Error(fmt.Sprintf("Cickhouse: %s - %s:%s", target, c.Opts.Username, c.Opts.Password))
 			}
 		case sqlquery.DatabaseFailure:
-			o.Logger.Error(fmt.Sprintf("Cickhouse: %s - %s:%s\tDatabase doesn't exist: %s", target, o.Username, o.Password, o.Database))
+			c.Logger.Error(fmt.Sprintf("Cickhouse: %s - %s:%s\tDatabase doesn't exist: %s", target, c.Opts.Username, c.Opts.Password, c.Opts.Database))
 		default:
-			o.Logger.Fatal(err.Error())
+			c.Logger.Fatal(err.Error())
+			return err
 		}
-		return
+		return nil
 	}
 
-	o.Logger.Found(fmt.Sprintf("Cickhouse: %s - %s:%s", target, o.Username, o.Password))
+	c.Logger.Found(fmt.Sprintf("Cickhouse: %s - %s:%s", target, c.Opts.Username, c.Opts.Password))
 
-	if o.Query == "" {
-		return
+	if c.Opts.Query == "" {
+		return nil
 	}
 
-	rows, err := conn.ExecuteQuery(o.Query)
+	rows, err := conn.ExecuteQuery(c.Opts.Query)
 	if err != nil {
-		o.Logger.Fatal(err.Error())
-		return
+		c.Logger.Fatal(err.Error())
+		return nil
 	}
 	defer rows.Close()
 
 	fmt.Println(conn.PrintableRows(rows))
+	return nil
 }
 
 func NewCmdClickhouse() *cobra.Command {
-	o := NewClickhouseOptions()
+	o := clickResources.ClickhouseOptions{}
+
+	c := NewClickhouseCmd(o)
+
 	cmd := &cobra.Command{
 		Use:   "clickhouse",
 		Short: "discover Clickhouse",
 		Long:  `This module discoveres ClickHouse Database`,
-		Run:   o.Run,
+		Run:   c.Run,
 	}
 
-	o.SetDefaultOptions(cmd)
+	// Set default opts from parent
+	c.SetDefaultOptions(cmd)
 
 	// Reset default attributes
-	cmd.Flags().IntVarP(&o.Port, "port", "P", 9000, "")
+	cmd.Flags().IntVarP(&c.Opts.Port, "port", "P", 9000, "")
 
 	// Set not default options
-	cmd.Flags().StringVarP(&o.Username, "username", "u", "", "")
-	cmd.Flags().StringVarP(&o.Password, "password", "p", "", "")
-	cmd.Flags().StringVarP(&o.Database, "database", "d", "default", "")
-	cmd.Flags().IntVarP(&o.Timeout, "timeout", "", 5, "")
-	cmd.Flags().StringVarP(&o.Query, "query", "q", "", "SQL query to execute after auth")
+	cmd.Flags().StringVarP(&c.Opts.Username, "username", "u", "", "")
+	cmd.Flags().StringVarP(&c.Opts.Password, "password", "p", "", "")
+	cmd.Flags().StringVarP(&c.Opts.Database, "database", "d", "default", "")
+	cmd.Flags().IntVarP(&c.Opts.Timeout, "timeout", "", 5, "")
+	cmd.Flags().StringVarP(&c.Opts.Query, "query", "q", "", "SQL query to execute after auth")
 
+	// Modules
+	c.RegisterModule(modules.NewClickhouseBruteModule(c.Opts))
 	return cmd
 }
 
