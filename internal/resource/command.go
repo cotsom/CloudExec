@@ -113,7 +113,14 @@ func (c *Command) Run(cmd *cobra.Command, args []string) {
 				return
 			}
 			// Run module
-			c.Modules[c.Opts.Module].Run(target)
+			module, ok := c.Modules[c.Opts.Module]
+			if !ok {
+				c.Logger.Fatal(
+					fmt.Sprintf("No such nodule %s\n Try -L flag to list all flags", c.Opts.Module),
+				)
+				return
+			}
+			module.Run(target)
 		}()
 		// utils.ProgressBar(len(targets), i+1, &progress)
 	}
