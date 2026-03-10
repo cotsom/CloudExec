@@ -1,9 +1,6 @@
 package cmd
 
 import (
-
-	//modules "github.com/cotsom/CloudExec/internal/modules/test"
-
 	"database/sql"
 	"fmt"
 
@@ -20,7 +17,10 @@ import (
 type ClickhouseCmd struct {
 	resource.Command
 
+	// Redefining
 	Opts clickResources.ClickhouseOptions
+
+	// TODO: Mutex to fix print race
 }
 
 func NewClickhouseCmd(opts clickResources.ClickhouseOptions) *ClickhouseCmd {
@@ -35,6 +35,7 @@ func NewClickhouseCmd(opts clickResources.ClickhouseOptions) *ClickhouseCmd {
 	return c
 }
 
+// Default command method with main functionality
 func (c *ClickhouseCmd) Check(target string) error {
 	dsn := fmt.Sprintf("clickhouse://%s:%s@%s:%d/%s?dial_timeout=%ds&read_timeout=%ds",
 		c.Opts.Username,
@@ -102,7 +103,6 @@ func NewCmdClickhouse() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clickhouse",
 		Short: "discover Clickhouse",
-		Long:  `This module discoveres ClickHouse Database`,
 		Run:   c.Run,
 	}
 
@@ -120,7 +120,8 @@ func NewCmdClickhouse() *cobra.Command {
 	cmd.Flags().StringVarP(&c.Opts.Query, "query", "q", "", "SQL query to execute after auth")
 
 	// Modules
-	c.RegisterModule(modules.NewClickhouseBruteModule(c.Opts))
+	c.RegisterModule(modules.NewClickhouseBruteModule(c.Opts, c.Logger))
+
 	return cmd
 }
 

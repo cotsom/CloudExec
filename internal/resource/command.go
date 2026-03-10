@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO: think about no interface
 type CommandIface interface {
 	Check(target string) error
 }
@@ -31,7 +32,7 @@ func (c *Command) SetDefaultOptions(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&c.Opts.ListModules, "list-modules", "L", false, "Lists modules")
 	cmd.Flags().StringVarP(&c.Opts.Module, "module", "M", "", "Choose module")
 
-	// For package name
+	// For command name
 	c.Name = cmd.Use
 }
 
@@ -91,7 +92,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 	var sem chan struct{} = make(chan struct{}, c.Opts.Threads)
 
-	// Start check function on all targets with goroutines
+	// TODO: progress bar
 	// progress := 0
 	// for i, target := range targets {
 	for _, target := range targets {
@@ -105,7 +106,9 @@ func (c *Command) Run(cmd *cobra.Command, args []string) {
 				wg.Done()
 			}()
 
+			// Running check of default connection
 			err := c.Check(target)
+			// If target is alive
 			if err != nil || c.Opts.Module == "" {
 				return
 			}

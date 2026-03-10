@@ -1,11 +1,13 @@
 package resource
 
+// Run method will be implementeted by children
 type ModuleIface interface {
 	Run(target string)
 	GetName() string
 	GetDescription() string
 }
 
+// Module parent struct for -M and -L flags
 type Module struct {
 	ModuleIface
 

@@ -36,6 +36,7 @@ func (e *Executor) Ping() error {
 	return nil
 }
 
+// TODO: refactoring
 func (e *Executor) PrintableRows(rows *sql.Rows) string {
 	if rows == nil {
 		return "<no rows>"
@@ -101,6 +102,7 @@ func (e *Executor) PrintableRows(rows *sql.Rows) string {
 	return sb.String()
 }
 
+// TODO: execute multiple queries with `;`
 func (e *Executor) ExecuteQuery(query string) (*sql.Rows, error) {
 	query = strings.TrimSpace(query)
 	if len(query) >= 6 && query[:6] == "SELECT" {
@@ -114,6 +116,8 @@ func (e *Executor) ExecuteQuery(query string) (*sql.Rows, error) {
 		return nil, err
 	}
 }
+
+// TODO: execute query from file
 
 func (e *Executor) Close() {
 	e.cancel()
