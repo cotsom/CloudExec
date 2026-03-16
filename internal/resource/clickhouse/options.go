@@ -10,7 +10,10 @@ type ClickhouseOptions struct {
 	Password string
 	Database string
 
-	Query string
+	Query   string
+	File    string
+	Command string
+	URL     string
 
 	Timeout int
 }
