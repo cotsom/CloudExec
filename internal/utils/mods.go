@@ -70,6 +70,7 @@ func ParseTargetsFromList(inputFile string) []string {
 	}
 
 	if err := scanner.Err(); err != nil {
+		// TODO: centralized logger
 		log.Fatal(err)
 	}
 

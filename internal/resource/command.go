@@ -20,7 +20,7 @@ type Command struct {
 	Name string
 	Opts Options
 
-	Logger  Logger
+	Logger  *Logger
 	Modules map[string]ModuleIface
 }
 
@@ -60,6 +60,9 @@ func (c *Command) GetTargets(args []string) ([]string, error) {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) {
+	c.Logger = NewLogger()
+	defer c.Logger.DeferPrint()
+
 	if c.Opts.ListModules {
 		if len(c.Modules) == 0 {
 			c.Logger.Raw(
@@ -87,7 +90,6 @@ func (c *Command) Run(cmd *cobra.Command, args []string) {
 		cmd.Help()
 		return
 	}
-
 	// Creates
 	var wg sync.WaitGroup
 	var sem chan struct{} = make(chan struct{}, c.Opts.Threads)
@@ -104,8 +106,8 @@ func (c *Command) Run(cmd *cobra.Command, args []string) {
 			defer func() {
 				<-sem
 				wg.Done()
+				c.Logger.DeferPrint()
 			}()
-
 			// Running check of default connection
 			err := c.Check(target)
 			// If target is alive

@@ -3,6 +3,7 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	modules "github.com/cotsom/CloudExec/internal/modules/clickhouse"
 	"github.com/cotsom/CloudExec/internal/resource"
@@ -89,7 +90,9 @@ func (c *ClickhouseCmd) Check(target string) error {
 	case c.Opts.File != "":
 		query = fmt.Sprintf("SELECT * FROM file('%s', 'LineAsString', 'result String')", c.Opts.File)
 	case c.Opts.URL != "":
-		// TODO: check if startswith http:// or https://
+		if !strings.HasPrefix(c.Opts.URL, "http://") && !strings.HasPrefix(c.Opts.URL, "https://") {
+			c.Opts.URL = "http://" + c.Opts.URL
+		}
 		query = fmt.Sprintf("SELECT * FROM url('%s', 'LineAsString', 'result String')", c.Opts.URL)
 	default:
 		return nil
@@ -101,8 +104,8 @@ func (c *ClickhouseCmd) Check(target string) error {
 		return nil
 	}
 	defer rows.Close()
+	c.Logger.Raw(conn.PrintableRows(rows))
 
-	fmt.Println(conn.PrintableRows(rows))
 	return nil
 }
 

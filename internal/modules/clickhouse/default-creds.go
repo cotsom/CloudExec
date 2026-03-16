@@ -17,7 +17,7 @@ type ClickhouseBruteModule struct {
 	resource.Module
 
 	Opts   clickResources.ClickhouseOptions
-	Logger resource.Logger
+	Logger *resource.Logger
 }
 
 func (m *ClickhouseBruteModule) checkConnection(target, username, password string) {
@@ -66,7 +66,7 @@ func (m *ClickhouseBruteModule) Run(target string) {
 
 }
 
-func NewClickhouseBruteModule(opts clickResources.ClickhouseOptions, logger resource.Logger) *ClickhouseBruteModule {
+func NewClickhouseBruteModule(opts clickResources.ClickhouseOptions, logger *resource.Logger) *ClickhouseBruteModule {
 	module := &ClickhouseBruteModule{
 		Module: resource.Module{
 			Name:        "default-creds",

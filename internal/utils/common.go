@@ -63,6 +63,10 @@ func Colorize(color Color, message string) {
 	fmt.Println(string(color), message, string(ColorReset))
 }
 
+func ColorizeFMT(color Color, message string) string {
+	return fmt.Sprintf("%s%s%s\n", string(color), message, string(ColorReset))
+}
+
 func HttpRequest(targetUrl string, method string, data []byte, client http.Client) (*http.Response, error) {
 	request, err := http.NewRequest(method, targetUrl, bytes.NewBuffer(data))
 	if err != nil {
