@@ -27,6 +27,11 @@ type Logger struct {
 func (l *Logger) printGorutine(text string) {
 	gid := getGorutineID()
 
+	if gid == 1 {
+		fmt.Print(text)
+		return
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.buffers[gid] += text

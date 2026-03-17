@@ -123,6 +123,12 @@ func (e *Executor) Close() {
 	e.cancel()
 }
 
+func (e *Executor) Escape(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `''`)
+	return s
+}
+
 func NewExecutor(db *sql.DB) *Executor {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
