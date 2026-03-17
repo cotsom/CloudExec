@@ -70,6 +70,7 @@ func ParseTargetsFromList(inputFile string) []string {
 	}
 
 	if err := scanner.Err(); err != nil {
+		// TODO: centralized logger
 		log.Fatal(err)
 	}
 
@@ -89,7 +90,7 @@ func GetTargets(flags map[string]string, args []string) ([]string, error) {
 	var targets []string
 
 	if (len(args) < 1) && (flags["inputlist"] == "") {
-		return nil, errors.New("enter host / subnetwork / input list")
+		return nil, errors.New("Enter: [host / subnetwork / input list (-i)]")
 	}
 
 	if flags["inputlist"] != "" {
