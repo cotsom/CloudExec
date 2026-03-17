@@ -19,6 +19,10 @@ type TemplateCmd struct {
 func NewTemplateCmd(opts clickResources.ClickhouseOptions) *TemplateCmd {
 	c := &TemplateCmd{
 		Opts: opts,
+		Command: resource.Command{
+			Logger: resource.NewLogger(),
+		},
+
 		// ...
 	}
 
@@ -39,7 +43,7 @@ func NewCmdTemplate() *cobra.Command {
 	c := NewTemplateCmd(o)
 
 	cmd := &cobra.Command{
-		Use:   "clickhouse",
+		Use:   "template",
 		Short: "discover Template Service",
 		Run:   c.Run,
 	}

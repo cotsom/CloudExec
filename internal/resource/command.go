@@ -60,7 +60,6 @@ func (c *Command) GetTargets(args []string) ([]string, error) {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) {
-	c.Logger = NewLogger()
 	defer c.Logger.DeferPrint()
 
 	if c.Opts.ListModules {

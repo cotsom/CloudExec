@@ -27,7 +27,9 @@ type ClickhouseCmd struct {
 func NewClickhouseCmd(opts clickResources.ClickhouseOptions) *ClickhouseCmd {
 	c := &ClickhouseCmd{
 		Opts: opts,
-		// ...
+		Command: resource.Command{
+			Logger: resource.NewLogger(),
+		},
 	}
 
 	// Sets child `Check` function realization for parent interface
