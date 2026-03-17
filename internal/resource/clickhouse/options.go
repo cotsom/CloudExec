@@ -14,6 +14,7 @@ type ClickhouseOptions struct {
 	File    string
 	Command string
 	URL     string
+	Headers []string
 
 	Timeout int
 }
