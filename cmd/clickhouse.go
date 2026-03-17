@@ -88,9 +88,9 @@ func (c *ClickhouseCmd) Check(target string) error {
 	case c.Opts.Query != "":
 		query = c.Opts.Query
 	case c.Opts.Command != "":
-		query = fmt.Sprintf("SELECT * FROM executable('%s', 'LineAsString', 'result String')", c.Opts.Command)
+		query = fmt.Sprintf("SELECT * FROM executable('%s', 'LineAsString', 'result String')", conn.Escape(c.Opts.Command))
 	case c.Opts.File != "":
-		query = fmt.Sprintf("SELECT * FROM file('%s', 'LineAsString', 'result String')", c.Opts.File)
+		query = fmt.Sprintf("SELECT * FROM file('%s', 'LineAsString', 'result String')", conn.Escape(c.Opts.File))
 	case c.Opts.URL != "":
 		if !strings.HasPrefix(c.Opts.URL, "http://") && !strings.HasPrefix(c.Opts.URL, "https://") {
 			c.Opts.URL = "http://" + c.Opts.URL
@@ -100,8 +100,8 @@ func (c *ClickhouseCmd) Check(target string) error {
 		if len(c.Opts.Headers) > 0 {
 			for i, header := range c.Opts.Headers {
 				delim := strings.Index(header, ":")
-				headerKey := strings.TrimSpace(header[:delim])
-				headerValue := strings.TrimSpace(header[delim+1:])
+				headerKey := conn.Escape(strings.TrimSpace(header[:delim]))
+				headerValue := conn.Escape(strings.TrimSpace(header[delim+1:]))
 
 				headers = fmt.Sprintf("%s'%s'='%s'", headers, headerKey, headerValue)
 				if i != len(c.Opts.Headers)-1 {
@@ -110,7 +110,7 @@ func (c *ClickhouseCmd) Check(target string) error {
 			}
 			headers = fmt.Sprintf(", headers(%s)", headers)
 		}
-		query = fmt.Sprintf("SELECT * FROM url('%s', 'LineAsString', 'result String'%s)", c.Opts.URL, headers)
+		query = fmt.Sprintf("SELECT * FROM url('%s', 'LineAsString', 'result String'%s)", conn.Escape(c.Opts.URL), headers)
 	default:
 		return nil
 	}
