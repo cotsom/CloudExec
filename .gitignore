@@ -6,6 +6,7 @@ cpu.pprof
 .DS_Store
 .env
 .obsidian
+dist/
 test/
 .vscode
 clx

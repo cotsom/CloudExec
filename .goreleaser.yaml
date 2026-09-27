@@ -1,0 +1,41 @@
+version: 2
+
+project_name: cloudexec
+
+builds:
+  - id: cloudexec
+    main: .
+    binary: cloudexec
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/cotsom/CloudExec/cmd.version={{ .Version }}
+
+archives:
+  - id: cloudexec
+    ids:
+      - cloudexec
+    name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+
+checksum:
+  name_template: "checksums_{{ .Tag }}.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^Merge (pull request|branch)"
