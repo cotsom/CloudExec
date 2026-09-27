@@ -1,11 +1,10 @@
 module github.com/cotsom/CloudExec
 
-go 1.24.1
-
-toolchain go1.24.10
+go 1.25.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.43.0
+	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/go-git/go-billy/v6 v6.0.0-20250627091229-31e2a16eef30
 	github.com/go-git/go-git/v6 v6.0.0-20250728093604-6aaf1933ecab
 	github.com/go-zookeeper/zk v1.0.4
@@ -16,6 +15,7 @@ require (
 	go.etcd.io/etcd/client/v2 v2.305.22
 	go.etcd.io/etcd/client/v3 v3.6.3
 	go.uber.org/zap v1.27.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -24,6 +24,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -55,8 +56,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/grpc v1.71.1 // indirect
@@ -70,7 +71,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.3
 	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 )
